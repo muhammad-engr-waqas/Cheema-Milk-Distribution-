@@ -209,6 +209,38 @@ const createBulkMilkRecords = asyncHandler(async (req, res) => {
   if (routeId) {
     await MilkRecord.deleteMany({ date, type: 'Purchase', routeId });
     await PurchaseLedger.deleteMany({ date, routeId });
+  } else {
+    // Manual entries (no routeId): same date+partyName+type ka duplicate avoid karo
+    // Har incoming record ke liye purana record delete karo before insert
+    const purchaseParties = validRecords
+      .filter(r => r.type === 'Purchase')
+      .map(r => r.partyName);
+    const saleParties = validRecords
+      .filter(r => r.type === 'Sale')
+      .map(r => r.partyName);
+
+    if (purchaseParties.length > 0) {
+      const oldPurchases = await MilkRecord.find({
+        date, type: 'Purchase', routeId: { $exists: false },
+        partyName: { $in: purchaseParties },
+      }).select('_id').lean();
+      const oldIds = oldPurchases.map(r => r._id);
+      if (oldIds.length > 0) {
+        await MilkRecord.deleteMany({ _id: { $in: oldIds } });
+        await PurchaseLedger.deleteMany({ milkRecordId: { $in: oldIds } });
+      }
+    }
+    if (saleParties.length > 0) {
+      const oldSales = await MilkRecord.find({
+        date, type: 'Sale',
+        partyName: { $in: saleParties },
+      }).select('_id').lean();
+      const oldIds = oldSales.map(r => r._id);
+      if (oldIds.length > 0) {
+        await MilkRecord.deleteMany({ _id: { $in: oldIds } });
+        await SaleLedger.deleteMany({ milkRecordId: { $in: oldIds } });
+      }
+    }
   }
 
   const createdRecords = await MilkRecord.insertMany(
