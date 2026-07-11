@@ -98,8 +98,9 @@ const submitCollection = asyncHandler(async (req, res) => {
   collection.status = 'Submitted';
   await collection.save();
 
-  // Milk purchase records create karo har stop ke liye
-  await _createMilkRecordsFromCollection(collection, req.user._id);
+  // Milk records create nahi karo yahan — rate pata nahi hoti submit ke waqt
+  // Records tab create honge jab Admin/Accountant "Transfer to Purchases" karega
+  // aur MilkPurchases screen se rate set karke Save karega
 
   return ApiResponse.ok(collection, 'Collection submitted successfully').send(res);
 });
@@ -119,16 +120,13 @@ const transferToPurchases = asyncHandler(async (req, res) => {
     throw ApiError.badRequest('Already transferred. This collection has already been transferred to purchases and cannot be transferred again.');
   }
 
-  // Transfer karo
-  await _createMilkRecordsFromCollection(collection, req.user._id);
-
-  // Lock lagao
+  // Sirf lock lagao — records MilkPurchases screen se save honge (rate wahan set hoti hai)
   collection.isTransferred = true;
   collection.transferredAt = new Date();
   collection.transferredBy = req.user._id;
   await collection.save();
 
-  return ApiResponse.ok(collection, 'Entries successfully transferred to purchases').send(res);
+  return ApiResponse.ok(collection, 'Collection marked as transferred. Please set the rate and save from Farmer Purchases.').send(res);
 });
 
 /**
