@@ -53,7 +53,16 @@ export default function MilkPurchases() {
   const [rows, setRows] = useState<PurchaseRow[]>(() => {
     if (location.state?.transferredRecords) {
       const recordsToLoad = location.state.transferredRecords as PurchaseRow[];
-      return recordsToLoad.map(row => ({ ...row, rate: 0, amount: 0, pricePerLiter: 0 }));
+      // Saved rate localStorage se lo — transfer ke waqt bhi apply karo
+      const savedRate = Number(localStorage.getItem('dairy_fixed_purchase_rate') || '') || 0;
+      return recordsToLoad.map(row => {
+        const rate = savedRate > 0 ? savedRate : (row.rate || 0);
+        const totalTs = Number(row.totalTs) || 0;
+        const vol = Number(row.vol) || 0;
+        const amount = rate > 0 && totalTs > 0 ? totalTs * rate : 0;
+        const pricePerLiter = vol > 0 && amount > 0 ? amount / vol : 0;
+        return { ...row, rate, amount, pricePerLiter };
+      });
     }
     return [{ ...defaultRow, id: Math.random().toString(36).substring(7), rate: 0 }];
   });
@@ -64,14 +73,29 @@ export default function MilkPurchases() {
     rateLoadedRef.current = true;
     // Apply local cache immediately for snappy UX
     const localRate = Number(localStorage.getItem('dairy_fixed_purchase_rate') || '') || 0;
-    if (localRate > 0) applyRateToRows(localRate);
+    if (localRate > 0) {
+      setBulkRate(String(localRate));
+      // Sirf tab rows update karo agar kisi row ka rate 0 ho
+      // (transferred rows ka rate already set hai — overwrite mat karo)
+      setRows(prev => prev.map(row => {
+        if (row.rate > 0) return row; // already has rate, skip
+        const amount = localRate > 0 ? row.totalTs * localRate : 0;
+        const pricePerLiter = row.vol > 0 ? amount / row.vol : 0;
+        return { ...row, rate: localRate, amount, pricePerLiter };
+      }));
+    }
     if (!isOnline()) return;
     settingsApi.get('dairy_fixed_purchase_rate').then((res: any) => {
       if (res.success && res.data?.value !== undefined && res.data.value !== null) {
         const rate = Number(res.data.value) || 0;
         setBulkRate(String(rate || ''));
         localStorage.setItem('dairy_fixed_purchase_rate', String(rate));
-        applyRateToRows(rate);
+        setRows(prev => prev.map(row => {
+          if (row.rate > 0 && row.rate === rate) return row; // same rate, no change needed
+          const amount = calculateAmount(row.totalTs, rate);
+          const pricePerLiter = row.vol > 0 ? amount / row.vol : 0;
+          return { ...row, rate, amount, pricePerLiter };
+        }));
       }
     }).catch(() => {
       if (localRate > 0) setBulkRate(String(localRate));
