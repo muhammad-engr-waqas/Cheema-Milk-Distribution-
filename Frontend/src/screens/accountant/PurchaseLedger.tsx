@@ -102,7 +102,7 @@ const translations = {
     date: "Transaction Date *",
     previousBalance: "Previous Balance (Read-Only)",
     milkAmtPKR: "Milk Purchased (Amount in PKR) *",
-    advanceReceivedField: "Advance Received (Rs.) [Deducts Balance]",
+    advanceReceivedField: "Advance Paid (Rs.) [Deducts Balance]",
     cashReceivedField: "Net Cash Received (Paid Cash)",
     notes: "Notes / Action Description",
     notesPlaceholder: "e.g., Evening delivery, high thickness",
@@ -2031,7 +2031,7 @@ export default function PurchaseLedger() {
                       value={addTransportRelation}
                       onChange={(e) => setAddTransportRelation(e.target.value as any)}
                       className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none text-xs text-slate-705 bg-white"
-                    > <option value="Direct Self">Direct Self</option> <option value="Empty Driver">Empty Driver</option> </select> </div> </div> <div className="pt-4 text-left"> <button
+                    > <option value="Direct Self">Direct Self</option> <option value="Empty Driver">MT Driver</option> </select> </div> </div> <div className="pt-4 text-left"> <button
                     type="submit"
                     className="px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white shadow-md font-extrabold rounded-xl text-xs transition flex items-center gap-2 cursor-pointer inline-flex"
                   > <Save className="w-4 h-4" /> <span>{labels.saveProfile}</span> </button> </div> </form> </div>
@@ -2781,7 +2781,7 @@ export default function PurchaseLedger() {
                   <select value={editTransportRelation} onChange={e => setEditTransportRelation(e.target.value as any)}
                     className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-xs bg-white">
                     <option value="Direct Self">Direct Self</option>
-                    <option value="Empty Driver">Empty Driver</option>
+                    <option value="Empty Driver">MT Driver</option>
                   </select>
                 </div>
               </div>

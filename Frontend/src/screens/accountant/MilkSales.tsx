@@ -5,7 +5,7 @@ import { useMilkTransactionContext, MilkRecord } from '../../contexts/MilkTransa
 import { useAuth } from '../../contexts/AuthContext';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import { syncSetting } from '../../services/ledgerSync';
+import { syncSetting, syncDeleteSaleEntry } from '../../services/ledgerSync';
 import { settingsApi, ledgerApi, isOnline } from '../../services/api';
 
 interface SaleRow {
@@ -129,7 +129,7 @@ export default function MilkSales() {
   const [customerProfiles, setCustomerProfiles] = useState<any[]>([]);
   const [supplierProfiles, setSupplierProfiles] = useState<any[]>([]);
   
-  const { records, setSaleRecordsForDate } = useMilkTransactionContext();
+  const { records, setSaleRecordsForDate, removeRecord } = useMilkTransactionContext();
 
   const [filterPeriod, setFilterPeriod] = useState<string>('all');
   const [customStartDate, setCustomStartDate] = useState<string>(new Date().toISOString().split('T')[0]);
@@ -1106,7 +1106,7 @@ export default function MilkSales() {
               /> </div> </div>
         )}
 
-        <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden"> <div className="overflow-x-auto"> <table className="w-full text-left border-collapse"><thead><tr className="bg-slate-50 border-b border-slate-200 text-slate-650 text-xs uppercase tracking-wider"><th className="px-3 py-3 font-semibold w-16">S.No.</th> <th className="px-3 py-3 font-semibold">Date</th> <th className="px-3 py-3 font-semibold font-sans">Sale Unit</th> <th className="px-3 py-3 font-semibold">Name / Party</th> <th className="px-3 py-3 font-semibold">Deducted Volume (L)</th> <th className="px-3 py-3 font-semibold">TS%</th> <th className="px-3 py-3 font-semibold">Total TS</th> <th className="px-3 py-3 font-semibold">Amount</th></tr></thead><tbody className="divide-y divide-slate-100">
+        <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden"> <div className="overflow-x-auto"> <table className="w-full text-left border-collapse"><thead><tr className="bg-slate-50 border-b border-slate-200 text-slate-650 text-xs uppercase tracking-wider"><th className="px-3 py-3 font-semibold w-16">S.No.</th> <th className="px-3 py-3 font-semibold">Date</th> <th className="px-3 py-3 font-semibold font-sans">Sale Unit</th> <th className="px-3 py-3 font-semibold">Name / Party</th> <th className="px-3 py-3 font-semibold">Deducted Volume (L)</th> <th className="px-3 py-3 font-semibold">TS%</th> <th className="px-3 py-3 font-semibold">Total TS</th> <th className="px-3 py-3 font-semibold">Amount</th> <th className="px-3 py-3 font-semibold text-center">Action</th></tr></thead><tbody className="divide-y divide-slate-100">
                 {(() => {
                   const filtered = getFilteredRecords();
 
@@ -1132,8 +1132,29 @@ export default function MilkSales() {
                               ({record.soldQtyKg?.toFixed(2)} Kg originally)
                             </span>
                           )}
-                        </div> </td> <td className="px-3 py-3 text-sm text-slate-600 font-mono">{record.tsr.toFixed(2)}%</td> <td className="px-3 py-3 text-sm font-bold text-green-700 font-mono">{record.totalTs.toFixed(2)}</td> <td className="px-3 py-3 text-sm font-bold text-slate-800 font-mono">Rs. {record.amount.toFixed(2)}</td></tr>
-                  )) : (<tr><td colSpan={8} className="px-3 py-8 text-center text-sm text-slate-500">
+                        </div> </td> <td className="px-3 py-3 text-sm text-slate-600 font-mono">{record.tsr.toFixed(2)}%</td> <td className="px-3 py-3 text-sm font-bold text-green-700 font-mono">{record.totalTs.toFixed(2)}</td> <td className="px-3 py-3 text-sm font-bold text-slate-800 font-mono">Rs. {record.amount.toFixed(2)}</td>
+                      <td className="px-3 py-3 text-center">
+                        {user?.role === 'Admin' && (
+                          <button
+                            onClick={() => {
+                              if (confirm(`Delete sale record for ${record.partyName}?`)) {
+                                const lsKey = `cheema_sale_ledger_${record.date}`;
+                                try {
+                                  const entries = JSON.parse(localStorage.getItem(lsKey) || '[]');
+                                  localStorage.setItem(lsKey, JSON.stringify(entries.filter((e: any) => e.id !== record.id)));
+                                } catch (e) {}
+                                removeRecord(record.id);
+                                syncDeleteSaleEntry(record.id).catch(() => {});
+                              }
+                            }}
+                            aria-label="Delete sale record"
+                            className="w-7 h-7 rounded-lg flex items-center justify-center mx-auto text-[var(--text-muted)] hover:bg-red-50 hover:text-red-600 transition-all"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </td></tr>
+                  )) : (<tr><td colSpan={9} className="px-3 py-8 text-center text-sm text-slate-500">
                         No sales records found.
                       </td></tr>
                   );

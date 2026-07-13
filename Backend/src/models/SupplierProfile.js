@@ -17,7 +17,7 @@ const supplierProfileSchema = new mongoose.Schema(
     areaLocation: { type: String, default: '' },
     transportRelation: {
       type: String,
-      enum: ['Direct Self', 'Empty Driver', null],
+      enum: ['Direct Self', 'Empty Driver', 'MT Driver', null],
       default: null,
     },
   },
