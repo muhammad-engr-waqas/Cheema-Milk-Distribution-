@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { CreditCard, Search, Trash2, Calendar, DollarSign, Truck, TrendingUp, TrendingDown, X, Plus } from 'lucide-react';
 import { useAccountContext } from '../../contexts/AccountContext';
 import { useVehicleContext } from '../../contexts/VehicleContext';
+import { fmtDate } from '../../utils/dateFormat';
 import { useAuth } from '../../contexts/AuthContext';
 import { PageShell } from '../../components/ui/PageShell';
 import { cn } from '../../lib/utils';
@@ -119,7 +120,7 @@ export default function ExpenseEntry() {
                 </select> <input type="date" value={dateFilter} onChange={e=>setDateFilter(e.target.value)} className="form-input form-input-sm" /> </div> <p className="text-xs text-[var(--text-muted)]">{sortedRecords.length} record{sortedRecords.length!==1?'s':''} found</p> <div className="table-wrapper"> <div className="table-scroll"> <table className="data-table"><thead><tr><th>#</th><th>Date</th><th>Category</th> <th>From</th><th>To</th><th>Method</th> <th className="text-right">Amount</th>
                         {user?.role==='Admin' && <th>Del</th>}</tr></thead><tbody>
                       {sortedRecords.length === 0 ? (<tr><td colSpan={user?.role==='Admin'?8:7} className="py-10 text-center text-[var(--text-muted)]">No records match your filters.</td></tr>
-                      ) : sortedRecords.map(r => (<tr key={r.id}><td className="text-[var(--text-muted)] font-mono text-xs">#{r.sn}</td> <td className="font-mono text-xs text-[var(--text-secondary)]">{r.date}</td> <td> <div className="flex flex-col gap-0.5"> <span className={cn('badge text-[9px]',
+                      ) : sortedRecords.map(r => (<tr key={r.id}><td className="text-[var(--text-muted)] font-mono text-xs">#{r.sn}</td> <td className="font-mono text-xs text-[var(--text-secondary)]">{fmtDate(r.date)}</td> <td> <div className="flex flex-col gap-0.5"> <span className={cn('badge text-[9px]',
                                 r.type==='Income' ? 'badge-success' :
                                 r.category==='Truck Maintenance' ? 'badge-warning' :
                                 'badge-info')}>

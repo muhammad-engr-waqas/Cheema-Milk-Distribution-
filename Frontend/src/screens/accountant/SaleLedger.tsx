@@ -1,5 +1,6 @@
 ﻿import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { fmtDate } from '../../utils/dateFormat';
 import { 
   Calendar, Phone, Clock, Plus, Save, Trash2, 
   UserCheck, DollarSign, BarChart2, CheckCircle, Smartphone, User, MessageCircle, AlertCircle, Search, Edit2, Check, Eye, X, Filter, TrendingUp, RefreshCw, Send, CheckCircle2, ChevronRight, HelpCircle, FileDown
@@ -1806,7 +1807,7 @@ export default function SaleLedger() {
                       > <FileDown className="w-4 h-4" />
                         Download PDF Data
                       </button> </div> <div className="overflow-x-auto border border-slate-200 rounded-2xl"> <table className="w-full text-left text-xs text-slate-600"><thead className="bg-slate-50 text-slate-500 font-bold uppercase tracking-wider border-b border-slate-250"><tr><th className="px-4 py-3 text-left">Date & Time</th> <th className="px-4 py-3 text-left">Customer</th> <th className="px-4 py-3 text-left">Milk Value</th> <th className="px-4 py-3 text-left">Advance Deduct</th> <th className="px-4 py-3 text-left">Cash Net Paid</th></tr></thead><tbody className="divide-y divide-slate-100 bg-white">
-                          {filteredDailyEntriesFlat.map(item => (<tr key={item.id} className="hover:bg-slate-50/50 transition"><td className="px-4 py-3"> <span className="font-bold text-slate-700 block">{item.date}</span> <span className="text-[10px] text-slate-400 font-mono">{item.time}</span> </td> <td className="px-4 py-3 font-bold"> <button
+                          {filteredDailyEntriesFlat.map(item => (<tr key={item.id} className="hover:bg-slate-50/50 transition"><td className="px-4 py-3"> <span className="font-bold text-slate-700 block">{fmtDate(item.date)}</span> <span className="text-[10px] text-slate-400 font-mono">{item.time}</span> </td> <td className="px-4 py-3 font-bold"> <button
                                   type="button"
                                   onClick={() => {
                                     const prof = customerProfiles.find(s => 
@@ -1955,7 +1956,7 @@ export default function SaleLedger() {
                   <div className="bg-blue-50/50 border border-blue-100 rounded-xl p-3 mb-2"> <h5 className="text-[10px] font-black text-blue-800 uppercase tracking-widest mb-2 flex items-center gap-1"> <Clock className="w-3 h-3" /> Recent History Preview
                      </h5> <div className="space-y-1.5">
                        {recentHistory.map((h: any, idx: number) => (
-                         <div key={idx} className="flex justify-between items-center text-[10px] font-medium border-b border-blue-50 pb-1 last:border-0 last:pb-0"> <div className="flex gap-2"> <span className="text-slate-500">{h.date}</span> <span className="text-slate-800 font-bold">{h.milkLiter ? `${h.milkLiter.toFixed(1)}L` : 'PKR'}</span> </div> <div className="flex gap-3 font-mono"> <span className="text-rose-700">Net: Rs.{h.paymentReceived}</span> <span className="text-indigo-700">Adv: Rs.{h.advanceAmount}</span> </div> </div>
+                         <div key={idx} className="flex justify-between items-center text-[10px] font-medium border-b border-blue-50 pb-1 last:border-0 last:pb-0"> <div className="flex gap-2"> <span className="text-slate-500">{fmtDate(h.date)}</span> <span className="text-slate-800 font-bold">{h.milkLiter ? `${h.milkLiter.toFixed(1)}L` : 'PKR'}</span> </div> <div className="flex gap-3 font-mono"> <span className="text-rose-700">Net: Rs.{h.paymentReceived}</span> <span className="text-indigo-700">Adv: Rs.{h.advanceAmount}</span> </div> </div>
                        ))}
                      </div> </div>
                 )}
@@ -2419,7 +2420,7 @@ export default function SaleLedger() {
                                 }}
                                 className="hover:bg-slate-50/80 transition ease-in-out cursor-pointer group text-slate-700"
                                 title="Click to edit/view this entry"
-                              > <td className="px-3 py-4 whitespace-nowrap"> <span className="font-bold text-slate-800 block group-hover:text-emerald-700 transition-colors">{item.date}</span> <span className="text-[10px] text-slate-400 font-medium block">{item.time || 'Manual Entry'}</span> </td> <td className="px-3 py-4 text-center whitespace-nowrap font-black text-slate-700 font-mono">
+                              > <td className="px-3 py-4 whitespace-nowrap"> <span className="font-bold text-slate-800 block group-hover:text-emerald-700 transition-colors">{fmtDate(item.date)}</span> <span className="text-[10px] text-slate-400 font-medium block">{item.time || 'Manual Entry'}</span> </td> <td className="px-3 py-4 text-center whitespace-nowrap font-black text-slate-700 font-mono">
                                   {item.milkLiter ? `${item.milkLiter} ${item.milkUnit === 'Kg' ? 'Kg' : 'L'}` : '—'}
                                 </td> <td className="px-2 py-4 text-center whitespace-nowrap font-bold text-slate-600 font-mono">
                                   {item.fat != null ? `${Number(item.fat).toFixed(1)}%` : '—'}

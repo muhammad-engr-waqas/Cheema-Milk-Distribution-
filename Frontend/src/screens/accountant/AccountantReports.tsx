@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { Download, Filter, Droplets, ArrowUpRight, ArrowDownRight, Truck, Archive, Search, Calendar, ChevronRight, Scale } from 'lucide-react';
 import { useAccountContext } from '../../contexts/AccountContext';
 import { useMilkTransactionContext } from '../../contexts/MilkTransactionContext';
+import { fmtDate } from '../../utils/dateFormat';
 
 export default function AccountantReports() {
   const { accountRecords } = useAccountContext();
@@ -234,7 +235,7 @@ export default function AccountantReports() {
             Showing {filteredReportsList.length} filtered items
           </span> </div> <div className="overflow-x-auto"> <table className="w-full text-left border-collapse min-w-[900px]"><thead><tr className="bg-slate-50/50 border-b border-slate-200 text-slate-500 text-[10px] uppercase font-black tracking-wider"><th className="px-5 py-3">Date</th> <th className="px-5 py-3">Classification Type</th> <th className="px-5 py-3">Classification Category</th> <th className="px-5 py-3">Party Name / Counterparty</th> <th className="px-5 py-3">Payment Channel</th> <th className="px-5 py-3">Milk Quantity</th> <th className="px-5 py-3 text-right">Yield Amount</th> <th className="px-5 py-3">Operational Details / Particulars</th></tr></thead><tbody className="divide-y divide-slate-150 text-slate-700 text-xs">
               {filteredReportsList.length > 0 ? (
-                filteredReportsList.map((item) => (<tr key={item.id} className="hover:bg-slate-50/50 transition-colors"><td className="px-5 py-4 font-bold text-slate-650 whitespace-nowrap">{item.date}</td> <td className="px-5 py-4 whitespace-nowrap"> <span className={`inline-flex px-2.5 py-1 rounded-full text-[9px] font-black uppercase ${
+                filteredReportsList.map((item) => (<tr key={item.id} className="hover:bg-slate-50/50 transition-colors"><td className="px-5 py-4 font-bold text-slate-650 whitespace-nowrap">{fmtDate(item.date)}</td> <td className="px-5 py-4 whitespace-nowrap"> <span className={`inline-flex px-2.5 py-1 rounded-full text-[9px] font-black uppercase ${
                         item.type === 'Purchase' ? 'bg-blue-50 text-blue-800 border border-blue-100' :
                         item.type === 'Sale' ? 'bg-emerald-50 text-emerald-800 border border-emerald-100' :
                         item.type === 'Income' ? 'bg-teal-50 text-teal-800 border border-teal-100' :

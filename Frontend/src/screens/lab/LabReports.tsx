@@ -1,6 +1,7 @@
 import React from 'react';
 import { FileText, Download, Eye } from 'lucide-react';
 import { useLabContext } from '../../contexts/LabContext';
+import { fmtDate } from '../../utils/dateFormat';
 
 export default function LabReports() {
   const { labReports: labReportsContext } = useLabContext();
@@ -22,7 +23,7 @@ export default function LabReports() {
 
   return (
     <div className="space-y-6"> <div className="flex justify-between items-center"> <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Historical Lab Reports</h1> <div className="flex space-x-2"> <button className="flex items-center space-x-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors text-sm font-medium"> <Download className="w-4 h-4" /> <span className="hidden sm:inline">Export All (Excel)</span> </button> </div> </div> <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden"> <div className="overflow-x-auto"> <table className="w-full text-left border-collapse"><thead><tr className="bg-gray-50 dark:bg-gray-900/50"><th className="py-3 px-4 font-medium text-sm text-gray-600 dark:text-gray-300">Sample Number</th> <th className="py-3 px-4 font-medium text-sm text-gray-600 dark:text-gray-300">Date Logged</th> <th className="py-3 px-4 font-medium text-sm text-gray-600 dark:text-gray-300">FAT %</th> <th className="py-3 px-4 font-medium text-sm text-gray-600 dark:text-gray-300">SNF %</th> <th className="py-3 px-4 font-medium text-sm text-gray-600 dark:text-gray-300">Quality Status</th> <th className="py-3 px-4 font-medium text-sm text-gray-600 dark:text-gray-300">Actions</th></tr></thead><tbody className="divide-y divide-gray-100 dark:divide-gray-700">
-              {reports.map((report) => (<tr key={report.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50"><td className="py-3 px-4 text-sm font-mono text-blue-600 dark:text-blue-400">{report.id}</td> <td className="py-3 px-4 text-sm text-gray-500 dark:text-gray-400">{report.date}</td> <td className="py-3 px-4 text-sm font-medium text-gray-900 dark:text-white">{report.fat}%</td> <td className="py-3 px-4 text-sm font-medium text-gray-900 dark:text-white">{report.snf}%</td> <td className="py-3 px-4 text-sm"> <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+              {reports.map((report) => (<tr key={report.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50"><td className="py-3 px-4 text-sm font-mono text-blue-600 dark:text-blue-400">{report.id}</td> <td className="py-3 px-4 text-sm text-gray-500 dark:text-gray-400">{fmtDate(report.date)}</td> <td className="py-3 px-4 text-sm font-medium text-gray-900 dark:text-white">{report.fat}%</td> <td className="py-3 px-4 text-sm font-medium text-gray-900 dark:text-white">{report.snf}%</td> <td className="py-3 px-4 text-sm"> <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
                       report.status === 'Passed' 
                         ? 'bg-green-100 text-green-800 dark:bg-green-900/30' 
                         : 'bg-red-100 text-red-800 dark:bg-red-900/30'

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Plus, Save, Activity, Trash2, Calendar, Scale, Info, Download, BookOpen, Search, User } from 'lucide-react';
 import { useMilkTransactionContext, MilkRecord } from '../../contexts/MilkTransactionContext';
+import { fmtDate } from '../../utils/dateFormat';
 import { useAuth } from '../../contexts/AuthContext';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -1110,7 +1111,7 @@ export default function MilkSales() {
                 {(() => {
                   const filtered = getFilteredRecords();
 
-                  return filtered.length > 0 ? filtered.map((record, index) => (<tr key={record.id} className="hover:bg-slate-50"><td className="px-3 py-3 text-sm text-slate-500 font-mono">{index + 1}</td> <td className="px-3 py-3 text-sm text-slate-600 font-medium">{record.date}</td> <td className="px-3 py-3 text-sm"> <span className={`inline-flex px-2 py-0.5 rounded text-[10px] font-black uppercase ${
+                  return filtered.length > 0 ? filtered.map((record, index) => (<tr key={record.id} className="hover:bg-slate-50"><td className="px-3 py-3 text-sm text-slate-500 font-mono">{index + 1}</td> <td className="px-3 py-3 text-sm text-slate-600 font-medium">{fmtDate(record.date)}</td> <td className="px-3 py-3 text-sm"> <span className={`inline-flex px-2 py-0.5 rounded text-[10px] font-black uppercase ${
                           record.soldUnit === 'Kg' 
                             ? 'bg-green-100 text-green-800 font-mono' 
                             : 'bg-slate-100 text-slate-600 font-mono'
@@ -1284,7 +1285,7 @@ export default function MilkSales() {
                             const milkLit = Number(row.milkLiter) || Number(row.vol) || 0;
                             const milkRate = Number(row.rate) || 0;
                             
-                            return (<tr key={row.id || index} className="hover:bg-slate-50/50"><td className="px-4 py-2.5 text-slate-400 font-medium">{index + 1}</td> <td className="px-4 py-2.5 text-slate-600 font-sans font-medium">{row.date}</td> <td className="px-4 py-2.5 text-slate-450">{row.time || '—'}</td> <td className="px-4 py-2.5 text-slate-700 font-semibold">
+                            return (<tr key={row.id || index} className="hover:bg-slate-50/50"><td className="px-4 py-2.5 text-slate-400 font-medium">{index + 1}</td> <td className="px-4 py-2.5 text-slate-600 font-sans font-medium">{fmtDate(row.date)}</td> <td className="px-4 py-2.5 text-slate-450">{row.time || '—'}</td> <td className="px-4 py-2.5 text-slate-700 font-semibold">
                                   {milkLit > 0 ? (
                                     <div> <span>{milkLit.toFixed(2)} L @ {milkRate.toFixed(1)}</span>
                                       {row.fat !== undefined && (

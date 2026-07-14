@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Plus, Save, Droplets, Trash2, Calendar, User, X, Download } from 'lucide-react';
 import { useMilkTransactionContext, MilkRecord } from '../../contexts/MilkTransactionContext';
+import { fmtDate } from '../../utils/dateFormat';
 import { useAuth } from '../../contexts/AuthContext';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -464,7 +465,7 @@ export default function MilkPurchases() {
         <div className="table-wrapper"> <div className="table-scroll"> <table className="data-table"><thead><tr><th>#</th><th>Date</th><th>Name / Party</th> <th>Vol (L)</th><th>TS%</th><th>Total TS</th><th>Amount</th> <th className="text-center">Action</th></tr></thead><tbody>
                 {(() => {
                   const filtered = getFilteredRecords();
-                  return filtered.length > 0 ? filtered.map((record, index) => (<tr key={record.id}><td className="text-[var(--text-muted)] font-mono">{index+1}</td> <td className="font-mono text-[var(--text-secondary)]">{record.date}</td> <td> <button onClick={() => navigate(user?.role === 'Admin' ? '/admin/purchase-ledger' : '/accountant/purchase-ledger',{state:{preselectProfileName:record.partyName}})}
+                  return filtered.length > 0 ? filtered.map((record, index) => (<tr key={record.id}><td className="text-[var(--text-muted)] font-mono">{index+1}</td> <td className="font-mono text-[var(--text-secondary)]">{fmtDate(record.date)}</td> <td> <button onClick={() => navigate(user?.role === 'Admin' ? '/admin/purchase-ledger' : '/accountant/purchase-ledger',{state:{preselectProfileName:record.partyName}})}
                           className="text-blue-600 hover:text-blue-700 font-semibold hover:underline text-left">
                           {record.partyName}
                         </button> </td> <td className="font-mono">{record.vol.toFixed(2)} L</td> <td className="font-mono text-[var(--text-secondary)]">{record.tsr.toFixed(2)}%</td> <td className="font-bold font-mono text-blue-700">{record.totalTs.toFixed(2)}</td> <td className="font-black font-mono">Rs. {record.amount.toFixed(2)}</td> <td className="text-center">

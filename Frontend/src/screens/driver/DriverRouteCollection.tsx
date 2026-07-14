@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouteCollectionContext } from '../../contexts/RouteCollectionContext';
 import { MilkCollectionStop, RouteCollection, Route } from '../../types';
 import { Plus, Save, Trash2, Edit, X, Truck, Calendar, MapPin, Database, Download, GripVertical, Clock, SlidersHorizontal, History, FileSpreadsheet, RefreshCw } from 'lucide-react';
+import { fmtDate } from '../../utils/dateFormat';
 import { useAuth } from '../../contexts/AuthContext';
 import { routesApi } from '../../services/api';
 
@@ -726,7 +727,7 @@ export default function DriverRouteCollection() {
               return (
               <div key={col.id} className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col hover:border-indigo-300 transition-colors"> <div className="bg-slate-50 px-5 py-4 border-b border-slate-200 flex justify-between items-center"> <div> <h3 className="font-bold text-slate-800 text-lg flex items-center mb-1"> <Truck className="w-5 h-5 mr-2 text-indigo-500" /> {col.routeName}
                     </h3> <p className="text-sm text-slate-500">
-                      {col.date} | Tanker: <span className="font-medium text-slate-700">{col.tankerNumber}</span> | Milk Tester: <span className="font-medium text-slate-700">{col.mtName}</span> </p> </div> <div className="text-right"> <span className={`inline-block px-3 py-1 rounded text-xs font-bold mb-2 ${
+                      {fmtDate(col.date)} | Tanker: <span className="font-medium text-slate-700">{col.tankerNumber}</span> | Milk Tester: <span className="font-medium text-slate-700">{col.mtName}</span> </p> </div> <div className="text-right"> <span className={`inline-block px-3 py-1 rounded text-xs font-bold mb-2 ${
                       col.status === 'Draft' ? 'bg-slate-200 text-slate-700' : 
                       col.status === 'Submitted' ? 'bg-amber-100 text-amber-700' : 
                       col.status === 'Received' ? 'bg-emerald-100 text-emerald-700' : 
@@ -945,7 +946,7 @@ export default function DriverRouteCollection() {
               getFilteredHistory().map((col) => {
                 const sum = getSummary(col);
                 return (
-                  <div key={col.id} className="border border-slate-200 rounded-xl overflow-hidden shadow-xs hover:border-indigo-200 transition-colors bg-white"> <div className="p-3 bg-slate-50/85 border-b border-slate-200 flex flex-col sm:flex-row justify-between gap-2 border-b"> <div> <span className="text-xs font-black text-indigo-900 uppercase tracking-tight flex items-center gap-1"> <Truck className="w-3.5 h-3.5 text-indigo-600" /> <span>{col.routeName}</span> </span> <span className="text-[10px] text-slate-500 ml-2">Date: <strong className="text-slate-700">{col.date}</strong> • Tanker: <strong className="text-slate-700">{col.tankerNumber || '-'}</strong> • Milk Tester: <strong className="text-slate-700">{col.mtName || '-'}</strong></span> </div> <div> <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-md ${
+                  <div key={col.id} className="border border-slate-200 rounded-xl overflow-hidden shadow-xs hover:border-indigo-200 transition-colors bg-white"> <div className="p-3 bg-slate-50/85 border-b border-slate-200 flex flex-col sm:flex-row justify-between gap-2 border-b"> <div> <span className="text-xs font-black text-indigo-900 uppercase tracking-tight flex items-center gap-1"> <Truck className="w-3.5 h-3.5 text-indigo-600" /> <span>{col.routeName}</span> </span> <span className="text-[10px] text-slate-500 ml-2">Date: <strong className="text-slate-700">{fmtDate(col.date)}</strong> • Tanker: <strong className="text-slate-700">{col.tankerNumber || '-'}</strong> • Milk Tester: <strong className="text-slate-700">{col.mtName || '-'}</strong></span> </div> <div> <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-md ${
                           col.status === 'Draft' ? 'bg-slate-200 text-slate-700' : 
                           col.status === 'Submitted' ? 'bg-amber-100 text-amber-700' : 
                           col.status === 'Received' ? 'bg-emerald-100 text-emerald-800' :

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useAdvanceContext } from '../../contexts/AdvanceContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { Plus, Wallet, FileText, Calendar, DollarSign, Tag, ArrowDown, ArrowUp, User } from 'lucide-react';
+import { fmtDate } from '../../utils/dateFormat';
 
 export default function DriverAdvances() {
   const { user } = useAuth();
@@ -180,7 +181,7 @@ export default function DriverAdvances() {
                 /> </div>
             )}
           </div> </div> <div className="overflow-x-auto"> <table className="w-full text-left border-collapse"><thead><tr className="bg-slate-50 text-slate-500 text-sm border-b border-slate-200"><th className="px-6 py-3 font-semibold">Date</th> <th className="px-6 py-3 font-semibold">Type</th> <th className="px-6 py-3 font-semibold">Category/Context</th> <th className="px-6 py-3 font-semibold">Description</th> <th className="px-6 py-3 font-semibold text-right">Amount</th></tr></thead><tbody className="divide-y divide-slate-200">
-              {userTransactions.length > 0 ? userTransactions.map((tx) => (<tr key={tx.id} className="hover:bg-slate-50 transition-colors"><td className="px-6 py-4 text-sm font-medium text-slate-700 whitespace-nowrap">{tx.date}</td> <td className="px-6 py-4 text-sm whitespace-nowrap"> <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold ${
+              {userTransactions.length > 0 ? userTransactions.map((tx) => (<tr key={tx.id} className="hover:bg-slate-50 transition-colors"><td className="px-6 py-4 text-sm font-medium text-slate-700 whitespace-nowrap">{fmtDate(tx.date)}</td> <td className="px-6 py-4 text-sm whitespace-nowrap"> <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold ${
                       tx.type === 'ADVANCE' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
                     }`}>
                       {tx.type === 'ADVANCE' ? 'Advance' : 'Expense'}

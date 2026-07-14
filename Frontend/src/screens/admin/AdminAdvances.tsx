@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useAdvanceContext, AdvanceTransaction, AdvanceTransactionType } from '../../contexts/AdvanceContext';
 import { useUserContext, User } from '../../contexts/UserContext';
+import { fmtDate } from '../../utils/dateFormat';
 import { 
   Plus, 
   Wallet, 
@@ -753,7 +754,7 @@ export default function AdminAdvances() {
                           return (<tr key={tx.id} className="hover:bg-slate-50/70 transition-colors">
                               
                               {/* Date and dynamic timestamp check */}
-                              <td className="px-5 py-3.5 whitespace-nowrap text-slate-600"> <span className="font-bold block text-slate-800">{tx.date}</span> <span className="text-[9px] text-slate-400 flex items-center gap-1 mt-0.5" title="Creation recorded timestamp"> <Clock className="w-2.5 h-2.5 text-slate-300" />
+                              <td className="px-5 py-3.5 whitespace-nowrap text-slate-600"> <span className="font-bold block text-slate-800">{fmtDate(tx.date)}</span> <span className="text-[9px] text-slate-400 flex items-center gap-1 mt-0.5" title="Creation recorded timestamp"> <Clock className="w-2.5 h-2.5 text-slate-300" />
                                   {tx.createdAt ? new Date(tx.createdAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : 'Auto timestamp'}
                                 </span> </td>
 

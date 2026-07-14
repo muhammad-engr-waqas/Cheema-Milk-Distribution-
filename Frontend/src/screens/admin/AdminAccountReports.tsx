@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { useAccountContext } from '../../contexts/AccountContext';
 import { useMilkTransactionContext } from '../../contexts/MilkTransactionContext';
 import { useAdvanceContext } from '../../contexts/AdvanceContext';
+import { fmtDate } from '../../utils/dateFormat';
 import { useUserContext } from '../../contexts/UserContext';
 import { useDispatchContext } from '../../contexts/DispatchContext';
 import { dashboardApi, isOnline } from '../../services/api';
@@ -399,7 +400,7 @@ export default function AdminAccountReports() {
           {/* Records Table */}
           <div className="overflow-x-auto rounded-xl border border-slate-200"> <table className="w-full text-left min-w-[700px]"><thead className="bg-slate-50 border-b border-slate-200"><tr className="text-slate-500 text-[10px] uppercase font-bold tracking-wider"><th className="px-5 py-3">Reporting Date</th> <th className="px-5 py-3">Category Stream</th> <th className="px-5 py-3">Party Name / Hub Destination</th> <th className="px-5 py-3 text-right">Volume</th> <th className="px-5 py-3 text-right">Fiscal Worth</th> <th className="px-5 py-3">Technical Metrics Notes</th></tr></thead><tbody className="divide-y divide-slate-100 text-xs text-slate-700">
                 {p1CombinedRecords.length > 0 ? (
-                  p1CombinedRecords.map(item => (<tr key={item.id} className="hover:bg-slate-50/40 transition-colors"><td className="px-5 py-3.5 font-mono text-slate-400 font-bold">{item.date}</td> <td className="px-5 py-3.5"> <span className={`inline-flex px-2 py-0.5 rounded-full text-[9px] font-black uppercase border ${
+                  p1CombinedRecords.map(item => (<tr key={item.id} className="hover:bg-slate-50/40 transition-colors"><td className="px-5 py-3.5 font-mono text-slate-400 font-bold">{fmtDate(item.date)}</td> <td className="px-5 py-3.5"> <span className={`inline-flex px-2 py-0.5 rounded-full text-[9px] font-black uppercase border ${
                           item.type === 'Purchase' ? 'bg-blue-50 border-blue-200 text-blue-700' :
                           item.type === 'Sale' ? 'bg-emerald-50 border-emerald-200 text-emerald-700' :
                           'bg-purple-50 border-purple-200 text-purple-700'
@@ -471,7 +472,7 @@ export default function AdminAccountReports() {
           {/* Payments list table */}
           <div className="overflow-x-auto rounded-xl border border-slate-200"> <table className="w-full text-left min-w-[750px]"><thead className="bg-slate-50 border-b border-slate-200"><tr className="text-slate-500 text-[10px] uppercase font-bold tracking-wider"><th className="px-5 py-3">Payout Date</th> <th className="px-5 py-3">Recipient Payee Name</th> <th className="px-5 py-3">Expense Category</th> <th className="px-5 py-3">Disbursed Channel</th> <th className="px-5 py-3">Descriptive Audit Particulars</th> <th className="px-5 py-3 text-right">Disbursed Amount</th></tr></thead><tbody className="divide-y divide-slate-100 text-xs text-slate-700">
                 {paymentsMadeList.length > 0 ? (
-                  paymentsMadeList.map(pay => (<tr key={pay.id} className="hover:bg-slate-50/40 transition-colors"><td className="px-5 py-3 font-mono font-bold text-slate-400 whitespace-nowrap">{pay.date}</td> <td className="px-5 py-3 font-bold text-slate-800 whitespace-nowrap">{pay.payee}</td> <td className="px-5 py-3 whitespace-nowrap"> <span className="px-2 py-0.5 rounded text-[10px] font-black bg-slate-100 uppercase tracking-widest text-slate-600">
+                  paymentsMadeList.map(pay => (<tr key={pay.id} className="hover:bg-slate-50/40 transition-colors"><td className="px-5 py-3 font-mono font-bold text-slate-400 whitespace-nowrap">{fmtDate(pay.date)}</td> <td className="px-5 py-3 font-bold text-slate-800 whitespace-nowrap">{pay.payee}</td> <td className="px-5 py-3 whitespace-nowrap"> <span className="px-2 py-0.5 rounded text-[10px] font-black bg-slate-100 uppercase tracking-widest text-slate-600">
                           {pay.category}
                         </span> </td> <td className="px-5 py-3 text-slate-500 whitespace-nowrap">{pay.method}</td> <td className="px-5 py-3 text-slate-500 max-w-xs truncate">{pay.note}</td> <td className="px-5 py-3 text-right font-black font-mono text-rose-650">
                         Rs. {pay.amount.toLocaleString()}

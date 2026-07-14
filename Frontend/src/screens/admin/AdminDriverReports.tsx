@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useAdvanceContext } from '../../contexts/AdvanceContext';
 import { useUserContext } from '../../contexts/UserContext';
+import { fmtDate } from '../../utils/dateFormat';
 import { 
   FileText, Calendar, Filter, Download, DollarSign, ArrowUpRight, 
   ArrowDownLeft, User, Search, MapPin, Tag, CircleDot, AlertCircle
@@ -221,7 +222,7 @@ export default function AdminDriverReports() {
                       {periodExpenses.map(item => (
                         <div key={item.id} className="bg-slate-50 rounded-xl p-3.5 border border-slate-200 shadow-xs flex justify-between items-start hover:bg-slate-100/50 transition-colors"> <div className="space-y-1.5 flex-1 pr-3"> <div className="flex items-center space-x-2"> <span className="inline-flex items-center gap-1 bg-rose-100 text-rose-800 text-[9px] font-black px-2 py-0.5 rounded-full uppercase"> <Tag className="w-2.5 h-2.5" />
                                 {item.category || 'Transit'}
-                              </span> <span className="text-[10px] text-slate-400 font-bold font-mono">{item.date}</span> </div> <p className="text-xs font-semibold text-slate-800 flex items-start gap-1.5 leading-snug"> <MapPin className="w-3.5 h-3.5 text-slate-400 mt-0.5 flex-shrink-0" /> <span className="break-words">{item.description}</span> </p> </div> <div className="text-right flex-shrink-0"> <p className="text-xs font-bold text-slate-400 block">Spent Amount</p> <p className="text-sm font-black text-rose-650 font-mono mt-0.5">Rs. {item.amount.toLocaleString()}</p> </div> </div>
+                              </span> <span className="text-[10px] text-slate-400 font-bold font-mono">{fmtDate(item.date)}</span> </div> <p className="text-xs font-semibold text-slate-800 flex items-start gap-1.5 leading-snug"> <MapPin className="w-3.5 h-3.5 text-slate-400 mt-0.5 flex-shrink-0" /> <span className="break-words">{item.description}</span> </p> </div> <div className="text-right flex-shrink-0"> <p className="text-xs font-bold text-slate-400 block">Spent Amount</p> <p className="text-sm font-black text-rose-650 font-mono mt-0.5">Rs. {item.amount.toLocaleString()}</p> </div> </div>
                       ))}
                     </div>
                   ) : (

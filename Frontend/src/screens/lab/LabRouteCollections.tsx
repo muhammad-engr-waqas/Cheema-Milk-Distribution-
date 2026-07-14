@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useRouteCollectionContext } from '../../contexts/RouteCollectionContext';
 import { MilkCollectionStop, RouteCollection, TestResult } from '../../types';
 import { TestTube, Save, CheckCircle, AlertCircle, Clock } from 'lucide-react';
+import { fmtDate } from '../../utils/dateFormat';
 
 export default function LabRouteCollections() {
   const { collections, updateCollection } = useRouteCollectionContext();
@@ -44,14 +45,14 @@ export default function LabRouteCollections() {
                 key={col.id} 
                 onClick={() => handleSelect(col)}
                 className={`p-3 rounded-lg border cursor-pointer transition-colors ${selectedCol?.id === col.id ? 'border-indigo-500 bg-indigo-50' : 'border-slate-200 hover:border-indigo-300 bg-white'}`}
-              > <div className="font-bold text-slate-800 text-sm mb-1">{col.routeName}</div> <div className="text-xs text-slate-500 flex justify-between"> <span>{col.date}</span> <span className={`font-semibold ${col.status === 'Lab Tested' ? 'text-green-600' : 'text-amber-600'}`}>{col.status}</span> </div> </div>
+              > <div className="font-bold text-slate-800 text-sm mb-1">{col.routeName}</div> <div className="text-xs text-slate-500 flex justify-between"> <span>{fmtDate(col.date)}</span> <span className={`font-semibold ${col.status === 'Lab Tested' ? 'text-green-600' : 'text-amber-600'}`}>{col.status}</span> </div> </div>
             ))}
             {labCollections.length === 0 && (
               <div className="text-center p-4 text-slate-500 text-sm font-medium">No collections available for testing.</div>
             )}
           </div> </div> <div className="lg:col-span-3">
           {selectedCol ? (
-            <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden"> <div className="bg-slate-50 px-6 py-4 border-b border-slate-200 flex justify-between items-center"> <div> <h3 className="font-bold text-slate-800 text-lg">{selectedCol.routeName}</h3> <div className="text-sm text-slate-500 mt-1 flex space-x-4"> <span>Date: <span className="font-medium text-slate-700">{selectedCol.date}</span></span> <span>Tanker: <span className="font-medium text-slate-700">{selectedCol.tankerNumber}</span></span> </div> </div> <button 
+            <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden"> <div className="bg-slate-50 px-6 py-4 border-b border-slate-200 flex justify-between items-center"> <div> <h3 className="font-bold text-slate-800 text-lg">{selectedCol.routeName}</h3> <div className="text-sm text-slate-500 mt-1 flex space-x-4"> <span>Date: <span className="font-medium text-slate-700">{fmtDate(selectedCol.date)}</span></span> <span>Tanker: <span className="font-medium text-slate-700">{selectedCol.tankerNumber}</span></span> </div> </div> <button 
                   onClick={saveTests}
                   className="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2 rounded-lg font-medium shadow-sm flex items-center"
                 > <Save className="w-4 h-4 mr-2" /> Save lab results
