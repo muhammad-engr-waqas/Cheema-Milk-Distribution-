@@ -191,16 +191,19 @@ export default function MilkSales() {
       return;
     }
 
-    const doc = new jsPDF();
-    
+    const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const margin = 10;
+    const usableWidth = pageWidth - margin * 2;
+
     // Header Section
-    doc.setFontSize(18);
+    doc.setFontSize(14);
     doc.setFont("helvetica", "bold");
-    doc.text("Milk Sales Statement", 14, 20);
-    
-    doc.setFontSize(10);
+    doc.text("Milk Sales Statement", margin, 12);
+
+    doc.setFontSize(8);
     doc.setFont("helvetica", "normal");
-    
+
     // Sub-header details
     let dateRangeText = "All Records";
     if (filterPeriod === 'one-day') dateRangeText = "One Day (Today)";
@@ -209,30 +212,25 @@ export default function MilkSales() {
     else if (filterPeriod === 'three-day') dateRangeText = "Three Days";
     else if (filterPeriod === 'five-day') dateRangeText = "Five Days";
     else if (filterPeriod === 'seven-day') dateRangeText = "Seven Days";
-    else if (filterPeriod === 'custom') dateRangeText = `Custom Date Range: ${customStartDate} to ${customEndDate}`;
-    
-    doc.text(`Period: ${dateRangeText}`, 14, 27);
-    doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 14, 33);
-    
+    else if (filterPeriod === 'custom') dateRangeText = `Custom: ${fmtDate(customStartDate)} to ${fmtDate(customEndDate)}`;
+
+    doc.text(`Period: ${dateRangeText}`, margin, 18);
+    doc.text(`Generated: ${new Date().toLocaleDateString('en-PK')}`, margin, 23);
+
     // Prepare table columns and rows
     const columns = [
-      "S.No.",
-      "Date",
-      "Unit",
-      "Party Name",
-      "Volume (L)",
-      "Fat (%)",
-      "LR",
-      "SNF (%)",
-      "TS (%)",
-      "Total TS",
-      "Rate (Rs)",
-      "Amount (Rs)"
+      "S.No.", "Date", "Unit", "Party Name", "Volume (L)",
+      "Fat (%)", "LR", "SNF (%)", "TS (%)",
+      "Total TS", "Rate (Rs)", "Amount (Rs)"
     ];
-    
+
+    const colWidth = usableWidth / columns.length;
+    const columnStyles: Record<number, object> = {};
+    columns.forEach((_, i) => { columnStyles[i] = { cellWidth: colWidth }; });
+
     const tableRows = filtered.map((record, index) => [
       index + 1,
-      record.date,
+      fmtDate(record.date),
       record.soldUnit || 'L',
       record.partyName,
       record.vol.toFixed(2),
@@ -244,46 +242,37 @@ export default function MilkSales() {
       record.rate.toFixed(2),
       record.amount.toFixed(2)
     ]);
-    
+
     // Calculate Totals for PDF
     const totalVol = filtered.reduce((sum, r) => sum + r.vol, 0);
     const totalTs = filtered.reduce((sum, r) => sum + r.totalTs, 0);
     const totalAmount = filtered.reduce((sum, r) => sum + r.amount, 0);
-    
+
     // Add Totals row at the bottom of the PDF table
     tableRows.push([
-      "Total",
-      "",
-      "",
-      "",
-      totalVol.toFixed(2),
-      "",
-      "",
-      "",
-      "",
-      totalTs.toFixed(2),
-      "",
+      "Total", "", "", "",
+      totalVol.toFixed(2), "", "", "", "",
+      totalTs.toFixed(2), "",
       `Rs. ${totalAmount.toFixed(2)}`
     ]);
-    
+
     autoTable(doc, {
-      startY: 40,
+      startY: 27,
       head: [columns],
       body: tableRows,
       theme: 'grid',
-      styles: { fontSize: 8 },
-      headStyles: { fillColor: [16, 185, 129] }, // emerald / green color
-      footStyles: { fillColor: [241, 245, 249], textColor: [15, 23, 42], fontStyle: 'bold' },
+      styles: { fontSize: 6.5, cellPadding: 1.5, overflow: 'linebreak', valign: 'middle' },
+      headStyles: { fillColor: [16, 185, 129], textColor: 255, fontSize: 7, fontStyle: 'bold', halign: 'center' },
+      columnStyles,
+      margin: { left: margin, right: margin },
+      tableWidth: usableWidth,
       didParseCell: (data) => {
         if (data.row.index === tableRows.length - 1) {
           data.cell.styles.fontStyle = 'bold';
-          if (data.column.index === 0) {
-            data.cell.styles.halign = 'left';
-          }
         }
       }
     });
-    
+
     doc.save(`Milk_Sales_Statement_${new Date().toISOString().split('T')[0]}.pdf`);
   };
 

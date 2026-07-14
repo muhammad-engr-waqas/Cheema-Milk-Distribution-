@@ -2383,19 +2383,19 @@ export default function SaleLedger() {
                           { header: 'Balance', dataKey: 'remainingBalanceState' }
                         ];
                         const pdfRows = displayTimeline.map(t => ({
-                          date: t.date,
-                          milkLiter: t.milkLiter ? `${t.milkLiter} ${t.milkUnit === 'Kg' ? 'Kg' : 'L'}` : '-',
-                          fat: t.fat ? `${t.fat}%` : '-',
+                          date: fmtDate(t.date),
+                          milkLiter: t.milkLiter ? `${Number(t.milkLiter).toFixed(2)} ${t.milkUnit === 'Kg' ? 'Kg' : 'L'}` : '-',
+                          fat: t.fat ? `${Number(t.fat).toFixed(2)}%` : '-',
                           lr: t.lr ? `${t.lr}` : '-',
-                          snf: t.snf ? `${t.snf.toFixed(2)}%` : '-',
-                          tsPercent: t.fat && t.snf ? `${(t.fat + t.snf).toFixed(2)}%` : '-',
-                          totalTs: t.totalTs ? t.totalTs.toFixed(2) : '-',
-                          totalAmount: `Rs. ${t.totalAmount}`,
-                          discountAmount: t.discountAmount ? `- Rs. ${t.discountAmount}` : '-',
-                          spoiled: t.spoiledAmount ? `Rs. ${t.spoiledAmount}` : '-',
-                          advanceAmount: `- Rs. ${t.advanceAmount}`,
-                          paymentReceived: `- Rs. ${t.paymentReceived}`,
-                          remainingBalanceState: `Rs. ${t.remainingBalanceState}`
+                          snf: t.snf ? `${Number(t.snf).toFixed(2)}%` : '-',
+                          tsPercent: t.fat && t.snf ? `${(Number(t.fat) + Number(t.snf)).toFixed(2)}%` : '-',
+                          totalTs: t.totalTs ? Number(t.totalTs).toFixed(2) : '-',
+                          totalAmount: `Rs. ${Number(t.totalAmount).toFixed(2)}`,
+                          discountAmount: t.discountAmount ? `- Rs. ${Number(t.discountAmount).toFixed(2)}` : '-',
+                          spoiled: t.spoiledAmount ? `Rs. ${Number(t.spoiledAmount).toFixed(2)}` : '-',
+                          advanceAmount: `- Rs. ${Number(t.advanceAmount).toFixed(2)}`,
+                          paymentReceived: `- Rs. ${Number(t.paymentReceived).toFixed(2)}`,
+                          remainingBalanceState: `Rs. ${Number(t.remainingBalanceState).toFixed(2)}`
                         }));
                         downloadTransactionsPDF(`${profile.customerName} Ledger Report`, cols, pdfRows, `${profile.customerName}_Ledger`);
                       }}

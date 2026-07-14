@@ -1,5 +1,5 @@
 import jsPDF from 'jspdf';
-import autoTable, { UserOptions } from 'jspdf-autotable';
+import autoTable from 'jspdf-autotable';
 
 interface PdfColumn {
   header: string;
@@ -12,20 +12,52 @@ export const downloadTransactionsPDF = (
   data: any[],
   filename: string
 ) => {
-  const doc = new jsPDF();
+  // Landscape orientation taake sab columns ek line mein fit hon
+  const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
 
-  // Print Header
-  doc.setFontSize(18);
-  doc.text(title, 14, 22);
+  // Page width landscape A4 = 297mm, usable ~277mm (10mm margins each side)
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const margin = 10;
+  const usableWidth = pageWidth - margin * 2;
 
-  // Use the autoTable plugin
+  // Header
+  doc.setFontSize(14);
+  doc.setFont('helvetica', 'bold');
+  doc.text(title, margin, 14);
+  doc.setFontSize(8);
+  doc.setFont('helvetica', 'normal');
+  doc.text(`Generated: ${new Date().toLocaleDateString('en-PK')}`, margin, 20);
+
+  // Column widths — equal distribution across usable width
+  const colWidth = usableWidth / columns.length;
+  const columnStyles: Record<string, { cellWidth: number }> = {};
+  columns.forEach((_, i) => {
+    columnStyles[i] = { cellWidth: colWidth };
+  });
+
   autoTable(doc, {
-    startY: 30,
+    startY: 24,
     head: [columns.map(c => c.header)],
-    body: data.map(item => columns.map(c => item[c.dataKey])),
+    body: data.map(item => columns.map(c => item[c.dataKey] ?? '-')),
     theme: 'grid',
-    styles: { fontSize: 8 },
-    headStyles: { fillColor: [15, 118, 110] }, // Tailwind emerald-700
+    styles: {
+      fontSize: 6.5,          // Chota font — sab ek line mein
+      cellPadding: 1.5,
+      overflow: 'linebreak',
+      halign: 'left',
+      valign: 'middle',
+      minCellHeight: 6,
+    },
+    headStyles: {
+      fillColor: [15, 118, 110], // emerald-700
+      textColor: 255,
+      fontSize: 7,
+      fontStyle: 'bold',
+      halign: 'center',
+    },
+    columnStyles,
+    margin: { left: margin, right: margin },
+    tableWidth: usableWidth,
   });
 
   doc.save(`${filename}.pdf`);

@@ -225,24 +225,34 @@ export default function AdminDispatch() {
   });
 
   const generatePDFForHistory = () => {
-    const doc = new jsPDF();
-    doc.text(`Dispatch Loss History (${filterMode})`, 14, 15);
-    
-    let y = 25;
-    
+    const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const margin = 10;
+    const usableWidth = pageWidth - margin * 2;
+
+    doc.setFontSize(14);
+    doc.setFont('helvetica', 'bold');
+    doc.text(`Dispatch Loss History (${filterMode})`, margin, 12);
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Generated: ${new Date().toLocaleDateString('en-PK')}`, margin, 18);
+
+    let y = 22;
+
     const received = filteredDispatches.filter(d => d.status === 'Received' || d.status === 'Completed');
     if (received.length === 0) {
-      doc.text("No received dispatches found for this period.", 14, y);
+      doc.text("No received dispatches found for this period.", margin, y);
       doc.save(`dispatch_loss_history_${new Date().getTime()}.pdf`);
       return;
     }
 
+    const headers = ['Sr.', 'Date', 'Vehicle/Driver', 'Sent (Total)', 'Received (Total)', 'Loss (L/Kg)', 'Fat Diff', 'TS Diff'];
     const tableData: any[][] = [];
-    
+
     received.forEach((d, i) => {
       const originalSum = getSummary(d.entries || []);
       const receivedSum = getSummary(d.receivedEntries || []);
-      
+
       const literLoss = (Number(originalSum.totalMilkLiter) - Number(receivedSum.totalMilkLiter)).toFixed(2);
       const kgLoss = (Number(originalSum.totalMilkKgs) - Number(receivedSum.totalMilkKgs)).toFixed(2);
       const diffFat = (Number(originalSum.avgFat) - Number(receivedSum.avgFat)).toFixed(2);
@@ -250,23 +260,30 @@ export default function AdminDispatch() {
 
       tableData.push([
         i + 1,
-        d.date,
-        `${d.vehicleNumber}\n${d.driverName}`,
-        `${originalSum.totalMilkLiter} L\n${originalSum.totalMilkKgs} Kg`,
-        `${receivedSum.totalMilkLiter} L\n${receivedSum.totalMilkKgs} Kg`,
-        `${literLoss} L\n${kgLoss} Kg`,
+        fmtDate(d.date),
+        `${d.vehicleNumber} / ${d.driverName}`,
+        `${originalSum.totalMilkLiter} L / ${originalSum.totalMilkKgs} Kg`,
+        `${receivedSum.totalMilkLiter} L / ${receivedSum.totalMilkKgs} Kg`,
+        `${literLoss} L / ${kgLoss} Kg`,
         `${diffFat} %`,
         tsLoss
       ]);
     });
 
+    const colWidth = usableWidth / headers.length;
+    const columnStyles: Record<number, object> = {};
+    headers.forEach((_, i) => { columnStyles[i] = { cellWidth: colWidth }; });
+
     autoTable(doc, {
       startY: y,
-      head: [['Sr.', 'Date', 'Vehicle/Driver', 'Sent (Total)', 'Received (Total)', 'Loss (L/Kg)', 'Fat Diff', 'TS Diff']],
+      head: [headers],
       body: tableData,
       theme: 'grid',
-      styles: { fontSize: 8 },
-      headStyles: { fillColor: [79, 70, 229] }, // indigo-600
+      styles: { fontSize: 6.5, cellPadding: 1.5, overflow: 'linebreak', valign: 'middle' },
+      headStyles: { fillColor: [79, 70, 229], textColor: 255, fontSize: 7, fontStyle: 'bold', halign: 'center' },
+      columnStyles,
+      margin: { left: margin, right: margin },
+      tableWidth: usableWidth,
     });
 
     doc.save(`dispatch_loss_history_${new Date().getTime()}.pdf`);
