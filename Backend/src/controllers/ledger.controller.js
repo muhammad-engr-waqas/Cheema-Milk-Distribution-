@@ -326,7 +326,7 @@ const getSaleSummary = asyncHandler(async (req, res) => {
   const firstOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1)
     .toISOString().split('T')[0];
 
-  const [todayResult, monthResult] = await Promise.all([
+  const [todayResult, monthResult, allTime, allTimeKgs] = await Promise.all([
     SaleLedger.aggregate([
       { $match: { date: today } },
       {
@@ -348,11 +348,27 @@ const getSaleSummary = asyncHandler(async (req, res) => {
         },
       },
     ]),
+    SaleLedger.aggregate([
+      {
+        $group: {
+          _id: null,
+          total: { $sum: { $subtract: ['$totalAmount', { $ifNull: ['$spoiledAmount', 0] }] } },
+          liters: { $sum: { $subtract: ['$milkLiter', { $ifNull: ['$spoiledLiters', 0] }] } },
+        },
+      },
+    ]),
+    // Kg sales total
+    SaleLedger.aggregate([
+      { $match: { milkUnit: 'Kg' } },
+      { $group: { _id: null, kgs: { $sum: '$soldQtyKg' } } },
+    ]),
   ]);
 
   return ApiResponse.ok({
     today: todayResult[0] || { total: 0, liters: 0, count: 0 },
     thisMonth: monthResult[0] || { total: 0, liters: 0 },
+    allTime: allTime[0] || { total: 0, liters: 0 },
+    allTimeKgs: allTimeKgs[0]?.kgs || 0,
   }).send(res);
 });
 

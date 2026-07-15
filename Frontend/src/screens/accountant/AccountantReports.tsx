@@ -1,8 +1,9 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Download, Filter, Droplets, ArrowUpRight, ArrowDownRight, Truck, Archive, Search, Calendar, ChevronRight, Scale } from 'lucide-react';
 import { useAccountContext } from '../../contexts/AccountContext';
 import { useMilkTransactionContext } from '../../contexts/MilkTransactionContext';
 import { fmtDate } from '../../utils/dateFormat';
+import { ledgerApi, isOnline } from '../../services/api';
 
 export default function AccountantReports() {
   const { accountRecords } = useAccountContext();
@@ -15,29 +16,55 @@ export default function AccountantReports() {
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
 
-  // 1. Compute high accuracy volume metrics based on milk trades
-  const totalPurchaseLiters = useMemo(() => {
-    return milkRecords
-      .filter(r => r.type === 'Purchase')
-      .reduce((sum, r) => sum + r.vol, 0);
+  // Backend se accurate totals fetch karo (PurchaseLedger + SaleLedger se — same source as Dashboard)
+  const [ledgerTotals, setLedgerTotals] = useState<{
+    purchaseLiters: number;
+    saleLiters: number;
+    salesKgs: number;
+    stock: number;
+  }>({
+    purchaseLiters: 0,
+    saleLiters: 0,
+    salesKgs: 0,
+    stock: 0,
+  });
+
+  useEffect(() => {
+    if (!isOnline()) {
+      const pLiters = milkRecords.filter(r => r.type === 'Purchase').reduce((s, r) => s + (Number(r.vol) || 0), 0);
+      const sLiters = milkRecords.filter(r => r.type === 'Sale').reduce((s, r) => s + (Number(r.vol) || 0), 0);
+      const sKgs = milkRecords.filter(r => r.type === 'Sale' && r.soldUnit === 'Kg').reduce((s, r) => s + (Number(r.soldQtyKg) || 0), 0);
+      setLedgerTotals({ purchaseLiters: pLiters, saleLiters: sLiters, salesKgs: sKgs, stock: Math.max(0, pLiters - sLiters) });
+      return;
+    }
+    Promise.all([
+      ledgerApi.getPurchaseSummary(),
+      ledgerApi.getSaleSummary(),
+    ]).then(([pRes, sRes]: any[]) => {
+      const pLiters = Number(pRes?.data?.allTime?.liters) || 0;
+      // allTime liters try karo, agar 0 toh thisMonth se lo
+      const sAllTime = Number(sRes?.data?.allTime?.liters) || 0;
+      const sMonth   = Number(sRes?.data?.thisMonth?.liters) || 0;
+      const sLiters  = sAllTime > 0 ? sAllTime : sMonth;
+      const sKgs = Number(sRes?.data?.allTimeKgs) || 0;
+      setLedgerTotals({
+        purchaseLiters: pLiters,
+        saleLiters: sLiters,
+        salesKgs: sKgs,
+        stock: Math.max(0, pLiters - sLiters),
+      });
+    }).catch(() => {
+      const pLiters = milkRecords.filter(r => r.type === 'Purchase').reduce((s, r) => s + (Number(r.vol) || 0), 0);
+      const sLiters = milkRecords.filter(r => r.type === 'Sale').reduce((s, r) => s + (Number(r.vol) || 0), 0);
+      const sKgs = milkRecords.filter(r => r.type === 'Sale' && r.soldUnit === 'Kg').reduce((s, r) => s + (Number(r.soldQtyKg) || 0), 0);
+      setLedgerTotals({ purchaseLiters: pLiters, saleLiters: sLiters, salesKgs: sKgs, stock: Math.max(0, pLiters - sLiters) });
+    });
   }, [milkRecords]);
 
-  const totalSalesLiters = useMemo(() => {
-    return milkRecords
-      .filter(r => r.type === 'Sale')
-      .reduce((sum, r) => sum + r.vol, 0);
-  }, [milkRecords]);
-
-  const totalSalesKgs = useMemo(() => {
-    return milkRecords
-      .filter(r => r.type === 'Sale' && r.soldUnit === 'Kg')
-      .reduce((sum, r) => sum + (r.soldQtyKg || 0), 0);
-  }, [milkRecords]);
-
-  const currentStock = useMemo(() => {
-    const stock = totalPurchaseLiters - totalSalesLiters;
-    return stock < 0 ? 0 : stock;
-  }, [totalPurchaseLiters, totalSalesLiters]);
+  const totalPurchaseLiters = ledgerTotals.purchaseLiters;
+  const totalSalesLiters = ledgerTotals.saleLiters;
+  const totalSalesKgs = ledgerTotals.salesKgs;
+  const currentStock = ledgerTotals.stock;
 
   // Map Milk Records to generic report type
   const mappedMilkRecords = useMemo(() => {

@@ -243,16 +243,30 @@ export default function MilkSales() {
       record.amount.toFixed(2)
     ]);
 
-    // Calculate Totals for PDF
-    const totalVol = filtered.reduce((sum, r) => sum + r.vol, 0);
-    const totalTs = filtered.reduce((sum, r) => sum + r.totalTs, 0);
+    // Calculate Totals/Averages for PDF
+    const totalVol    = filtered.reduce((sum, r) => sum + r.vol, 0);
+    const totalTs     = filtered.reduce((sum, r) => sum + r.totalTs, 0);
     const totalAmount = filtered.reduce((sum, r) => sum + r.amount, 0);
 
-    // Add Totals row at the bottom of the PDF table
+    const avgFat = totalVol > 0
+      ? filtered.reduce((s, r) => s + (Number(r.fat) || 0) * r.vol, 0) / totalVol : 0;
+    const avgLr = totalVol > 0
+      ? filtered.reduce((s, r) => s + (Number(r.lr) || 0) * r.vol, 0) / totalVol : 0;
+    const avgSnf = totalVol > 0
+      ? filtered.reduce((s, r) => s + (Number(r.snf) || 0) * r.vol, 0) / totalVol : 0;
+    const avgTs = totalVol > 0
+      ? filtered.reduce((s, r) => s + (Number(r.tsr) || 0) * r.vol, 0) / totalVol : 0;
+
+    // Add Totals/Averages row at the bottom of the PDF table
     tableRows.push([
-      "Total", "", "", "",
-      totalVol.toFixed(2), "", "", "", "",
-      totalTs.toFixed(2), "",
+      "Total / Avg", "", "", "",
+      totalVol.toFixed(2),
+      avgFat.toFixed(2),
+      avgLr.toFixed(1),
+      avgSnf.toFixed(2),
+      avgTs.toFixed(2),
+      totalTs.toFixed(2),
+      "",
       `Rs. ${totalAmount.toFixed(2)}`
     ]);
 

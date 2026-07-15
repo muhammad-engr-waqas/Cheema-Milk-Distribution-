@@ -7,7 +7,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { syncSetting, syncDeletePurchaseEntry } from '../../services/ledgerSync';
-import { settingsApi, isOnline } from '../../services/api';
+import { settingsApi, ledgerApi, isOnline } from '../../services/api';
 
 interface PurchaseRow {
   id: string;
@@ -114,6 +114,33 @@ export default function MilkPurchases() {
 
   const { records, addRecords, removeRecord } = useMilkTransactionContext();
 
+  // Backend PurchaseLedger se history — screen aur PDF dono match karen
+  const [backendHistory, setBackendHistory] = useState<any[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+
+  useEffect(() => {
+    if (!isOnline()) return;
+    setHistoryLoading(true);
+    ledgerApi.getPurchase().then((res: any) => {
+      if (res.success && Array.isArray(res.data)) {
+        setBackendHistory(res.data.map((e: any) => ({
+          id: e._id || e.id,
+          date: e.date,
+          type: 'Purchase',
+          partyName: e.supplierName,
+          vol: Number(e.milkLiter) || 0,
+          fat: Number(e.fat) || 0,
+          lr: Number(e.lr) || 0,
+          snf: Number(e.snf) || 0,
+          tsr: (Number(e.fat) || 0) + (Number(e.snf) || 0),
+          totalTs: Number(e.totalTs) || 0,
+          rate: Number(e.rate) || 0,
+          amount: Number(e.totalAmount) || 0,
+        })));
+      }
+    }).catch(() => {}).finally(() => setHistoryLoading(false));
+  }, [records]); // records change hone par refresh
+
   const [filterPeriod, setFilterPeriod] = useState<string>('all');
   const [areExtendedFiltersRemoved, setAreExtendedFiltersRemoved] = useState<boolean>(false);
   const [customStartDate, setCustomStartDate] = useState<string>(new Date().toISOString().split('T')[0]);
@@ -133,7 +160,10 @@ export default function MilkPurchases() {
   };
 
   const getFilteredRecords = () => {
-    const purchaseRecords = records.filter(r => r.type === 'Purchase');
+    // Backend history prefer karo, fallback to context records
+    const purchaseRecords = backendHistory.length > 0
+      ? backendHistory
+      : records.filter(r => r.type === 'Purchase');
     return purchaseRecords.filter(record => {
       if (filterPeriod === 'one-day') {
         const diffDays = getDaysDifference(record.date);
@@ -167,9 +197,71 @@ export default function MilkPurchases() {
     });
   };
 
-  const downloadPDF = () => {
-    const filtered = getFilteredRecords();
-    if (filtered.length === 0) {
+  const downloadPDF = async () => {
+    // Backend PurchaseLedger se fresh data lo — MilkRecord context mein kuch entries missing ho sakti hain
+    let allRecords: any[] = [];
+
+    if (isOnline()) {
+      try {
+        // Filter params based on current filterPeriod
+        const params: Record<string, string> = {};
+        if (filterPeriod === 'one-day') {
+          const today = new Date().toISOString().split('T')[0];
+          params.startDate = today; params.endDate = today;
+        } else if (filterPeriod === 'yesterday') {
+          const d = new Date(); d.setDate(d.getDate() - 1);
+          const y = d.toISOString().split('T')[0];
+          params.startDate = y; params.endDate = y;
+        } else if (filterPeriod === 'two-day') {
+          const d = new Date(); d.setDate(d.getDate() - 1);
+          params.startDate = d.toISOString().split('T')[0];
+          params.endDate = new Date().toISOString().split('T')[0];
+        } else if (filterPeriod === 'three-day') {
+          const d = new Date(); d.setDate(d.getDate() - 2);
+          params.startDate = d.toISOString().split('T')[0];
+          params.endDate = new Date().toISOString().split('T')[0];
+        } else if (filterPeriod === 'five-day') {
+          const d = new Date(); d.setDate(d.getDate() - 4);
+          params.startDate = d.toISOString().split('T')[0];
+          params.endDate = new Date().toISOString().split('T')[0];
+        } else if (filterPeriod === 'seven-day') {
+          const d = new Date(); d.setDate(d.getDate() - 6);
+          params.startDate = d.toISOString().split('T')[0];
+          params.endDate = new Date().toISOString().split('T')[0];
+        } else if (filterPeriod === 'custom' && customStartDate && customEndDate) {
+          params.startDate = customStartDate; params.endDate = customEndDate;
+        }
+
+        const res: any = await ledgerApi.getPurchase(params);
+        if (res.success && Array.isArray(res.data)) {
+          allRecords = res.data.map((e: any) => ({
+            date: e.date,
+            partyName: e.supplierName,
+            vol: Number(e.milkLiter) || 0,
+            fat: Number(e.fat) || 0,
+            lr: Number(e.lr) || 0,
+            snf: Number(e.snf) || 0,
+            tsr: Number(e.fat || 0) + Number(e.snf || 0),
+            totalTs: Number(e.totalTs) || 0,
+            rate: Number(e.rate) || 0,
+            amount: Number(e.totalAmount) || 0,
+          }));
+        }
+      } catch (e) {
+        // fallback to context
+      }
+    }
+
+    // Fallback: context se lo
+    if (allRecords.length === 0) {
+      allRecords = getFilteredRecords().map(r => ({
+        date: r.date, partyName: r.partyName, vol: r.vol,
+        fat: r.fat, lr: r.lr, snf: r.snf, tsr: r.tsr,
+        totalTs: r.totalTs, rate: r.rate, amount: r.amount,
+      }));
+    }
+
+    if (allRecords.length === 0) {
       alert("No records to export.");
       return;
     }
@@ -211,30 +303,49 @@ export default function MilkPurchases() {
     const columnStyles: Record<number, object> = {};
     columns.forEach((_, i) => { columnStyles[i] = { cellWidth: colWidth }; });
     
-    const tableRows = filtered.map((record, index) => [
+    const tableRows = allRecords.map((record: any, index: number) => [
       index + 1,
       fmtDate(record.date),
       record.partyName,
-      record.vol.toFixed(2),
-      (record.fat || 0).toFixed(1),
-      (record.lr || 0).toFixed(1),
-      (record.snf || 0).toFixed(2),
-      (record.tsr || 0).toFixed(2),
-      record.totalTs.toFixed(2),
-      record.rate.toFixed(2),
-      record.amount.toFixed(2)
+      Number(record.vol).toFixed(2),
+      Number(record.fat || 0).toFixed(1),
+      Number(record.lr || 0).toFixed(1),
+      Number(record.snf || 0).toFixed(2),
+      Number(record.tsr || 0).toFixed(2),
+      Number(record.totalTs).toFixed(2),
+      Number(record.rate).toFixed(2),
+      Number(record.amount).toFixed(2)
     ]);
     
-    // Calculate Totals for PDF
-    const totalVol = filtered.reduce((sum, r) => sum + r.vol, 0);
-    const totalTs = filtered.reduce((sum, r) => sum + r.totalTs, 0);
-    const totalAmount = filtered.reduce((sum, r) => sum + r.amount, 0);
-    
-    // Add Totals row at the bottom of the PDF table
+    // Calculate Totals/Averages for PDF
+    const totalVol    = allRecords.reduce((sum: number, r: any) => sum + (Number(r.vol) || 0), 0);
+    const totalTs     = allRecords.reduce((sum: number, r: any) => sum + (Number(r.totalTs) || 0), 0);
+    const totalAmount = allRecords.reduce((sum: number, r: any) => sum + (Number(r.amount) || 0), 0);
+
+    // Weighted averages (volume-weighted)
+    const avgFat = totalVol > 0
+      ? allRecords.reduce((s: number, r: any) => s + (Number(r.fat) || 0) * (Number(r.vol) || 0), 0) / totalVol
+      : 0;
+    const avgLr = totalVol > 0
+      ? allRecords.reduce((s: number, r: any) => s + (Number(r.lr) || 0) * (Number(r.vol) || 0), 0) / totalVol
+      : 0;
+    const avgSnf = totalVol > 0
+      ? allRecords.reduce((s: number, r: any) => s + (Number(r.snf) || 0) * (Number(r.vol) || 0), 0) / totalVol
+      : 0;
+    const avgTs = totalVol > 0
+      ? allRecords.reduce((s: number, r: any) => s + (Number(r.tsr) || 0) * (Number(r.vol) || 0), 0) / totalVol
+      : 0;
+
+    // Add Totals/Averages row at the bottom
     tableRows.push([
-      "Total", "", "",
-      totalVol.toFixed(2), "", "", "", "",
-      totalTs.toFixed(2), "",
+      "Total / Avg", "", "",
+      totalVol.toFixed(2),
+      avgFat.toFixed(2),
+      avgLr.toFixed(1),
+      avgSnf.toFixed(2),
+      avgTs.toFixed(2),
+      totalTs.toFixed(2),
+      "",
       `Rs. ${totalAmount.toFixed(2)}`
     ]);
     
