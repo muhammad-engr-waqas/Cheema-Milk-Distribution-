@@ -30,7 +30,6 @@ const navItems: NavItem[] = [
   { section: 'Operations',  title: 'Dispatch Record',    href: '/admin/dispatch',          icon: Truck,         roles: ['Admin'] },
   { section: 'Reports',     title: 'Account Report',     href: '/admin/account-reports',   icon: FileText,      roles: ['Admin'] },
   { section: 'Reports',     title: 'Driver Report',      href: '/admin/driver-reports',    icon: FileText,      roles: ['Admin'] },
-  { section: 'Reports',     title: 'Lab Reports',        href: '/admin/lab-reports',       icon: FileText,      roles: ['Admin'] },
   { section: 'Reports',     title: 'Profit & Loss',      href: '/admin/pnl',               icon: DollarSign,    roles: ['Admin'] },
   { section: 'Management',  title: 'Route Create',       href: '/admin/routes',            icon: Navigation,    roles: ['Admin'] },
   { section: 'Management',  title: 'Vehicles',           href: '/admin/vehicles',          icon: Truck,         roles: ['Admin'] },

@@ -32,7 +32,6 @@ import RouteManagement from './screens/admin/RouteManagement';
 import AdminRouteCollections from './screens/admin/AdminRouteCollections';
 import AdminAdvances from './screens/admin/AdminAdvances';
 import AdminDriverReports from './screens/admin/AdminDriverReports';
-import AdminLabReports from './screens/admin/AdminLabReports';
 import AdminAccountReports from './screens/admin/AdminAccountReports';
 import AdminDispatch from './screens/admin/AdminDispatch';
 
@@ -84,7 +83,7 @@ export default function App() {
             <BrowserRouter> <Routes> <Route path="/login" element={<Login />} />
               
               {/* Admin Routes */}
-              <Route element={<ProtectedRoute allowedRoles={['Admin']} />}> <Route path="/admin" element={<AdminDashboard />} /> <Route path="/admin/routes" element={<RouteManagement />} /> <Route path="/admin/collections" element={<AdminRouteCollections />} /> <Route path="/admin/users" element={<UserManagement />} /> <Route path="/admin/vehicles" element={<VehicleManagement />} /> <Route path="/admin/driver-reports" element={<AdminDriverReports />} /> <Route path="/admin/sale-ledger" element={<SaleLedger />} /> <Route path="/admin/purchase-ledger" element={<PurchaseLedger />} /> <Route path="/admin/farmer-purchases" element={<MilkPurchases />} /> <Route path="/admin/sales" element={<MilkSales />} /> <Route path="/admin/lab-reports" element={<AdminLabReports />} /> <Route path="/admin/account-reports" element={<AdminAccountReports />} /> <Route path="/admin/expense-entry" element={<ExpenseEntry />} /> <Route path="/admin/pnl" element={<AdminPnL />} /> <Route path="/admin/advances" element={<AdminAdvances />} /> <Route path="/admin/dispatch" element={<AdminDispatch />} /> </Route>
+              <Route element={<ProtectedRoute allowedRoles={['Admin']} />}> <Route path="/admin" element={<AdminDashboard />} /> <Route path="/admin/routes" element={<RouteManagement />} /> <Route path="/admin/collections" element={<AdminRouteCollections />} /> <Route path="/admin/users" element={<UserManagement />} /> <Route path="/admin/vehicles" element={<VehicleManagement />} /> <Route path="/admin/driver-reports" element={<AdminDriverReports />} /> <Route path="/admin/sale-ledger" element={<SaleLedger />} /> <Route path="/admin/purchase-ledger" element={<PurchaseLedger />} /> <Route path="/admin/farmer-purchases" element={<MilkPurchases />} /> <Route path="/admin/sales" element={<MilkSales />} /> <Route path="/admin/account-reports" element={<AdminAccountReports />} /> <Route path="/admin/expense-entry" element={<ExpenseEntry />} /> <Route path="/admin/pnl" element={<AdminPnL />} /> <Route path="/admin/advances" element={<AdminAdvances />} /> <Route path="/admin/dispatch" element={<AdminDispatch />} /> </Route>
 
               {/* MilkTester Routes */}
               <Route element={<ProtectedRoute allowedRoles={['MilkTester']} />}> <Route path="/milktester" element={<Navigate to="/milktester/collections" replace />} /> <Route path="/milktester/collections" element={<DriverRouteCollection />} /> </Route>
