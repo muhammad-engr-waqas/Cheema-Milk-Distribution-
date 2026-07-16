@@ -193,7 +193,11 @@ export default function AdminRouteCollections() {
               onChange={e => setSearchTerm(e.target.value)}
               className="form-input pl-9" /> </div> <div className="table-wrapper"> <div className="table-scroll"> <table className="data-table"><thead><tr><th>Date</th><th>Route Name</th><th>Milk Tester / Tanker</th> <th className="text-center">Stops</th><th>Volume (Kg)</th><th>Status</th><th></th></tr></thead><tbody>
                   {filteredCols.length === 0 ? (<tr><td colSpan={7} className="py-12 text-center text-[var(--text-muted)]">No route collections found.</td></tr>
-                  ) : filteredCols.map(col => (<tr key={col.id}><td className="font-mono text-xs text-[var(--text-secondary)]">{fmtDate(col.date)}</td> <td className="font-bold text-[var(--text-primary)]">{col.routeName}</td> <td> <p className="font-semibold text-[var(--text-primary)]">{col.mtName}</p> <p className="text-[11px] text-[var(--text-muted)] font-mono">{col.tankerNumber}</p> </td> <td className="text-center font-bold">{col.stops.length}</td> <td className="font-bold font-mono text-blue-600">{col.stops.reduce((a,b)=>a+b.milkKgs,0).toFixed(2)} Kg</td> <td><span className={cn('badge', STATUS_MAP[col.status] || 'badge-neutral')}>{col.status}</span></td> <td> <button onClick={() => openCollection(col)} className="btn btn-ghost btn-sm text-blue-600 hover:text-blue-700">
+                  ) : filteredCols.map(col => (<tr key={col.id}><td className="font-mono text-xs text-[var(--text-secondary)]">{fmtDate(col.date)}</td> <td className="font-bold text-[var(--text-primary)]">{col.routeName}</td> <td> <p className="font-semibold text-[var(--text-primary)]">{col.mtName}</p> <p className="text-[11px] text-[var(--text-muted)] font-mono">{col.tankerNumber}</p> </td> <td className="text-center font-bold">{col.stops.length}</td> <td className="font-bold font-mono text-blue-600">{col.stops.reduce((a,b)=>a+b.milkKgs,0).toFixed(2)} Kg</td> <td><span className={cn('badge',
+                            col.status === 'Received' && col.isTransferred
+                              ? 'badge-danger'   // Submitted ho gaya — red
+                              : STATUS_MAP[col.status] || 'badge-neutral'
+                          )}>{col.status}</span></td> <td> <button onClick={() => openCollection(col)} className="btn btn-ghost btn-sm text-blue-600 hover:text-blue-700">
                           View Details →
                         </button> </td></tr>
                   ))}</tbody></table> </div> </div> </>
