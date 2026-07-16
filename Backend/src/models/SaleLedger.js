@@ -22,6 +22,7 @@ const saleLedgerSchema = new mongoose.Schema(
     totalAmount: { type: Number, default: 0 },
     advanceAmount: { type: Number, default: 0 },
     paymentReceived: { type: Number, default: 0 },
+    vehicleRent: { type: Number, default: 0 },
     remainingBalance: { type: Number, default: 0 },
     notes: { type: String, default: '' },
     isManual: { type: Boolean, default: false },

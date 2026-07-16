@@ -211,12 +211,15 @@ const getSaleLedger = asyncHandler(async (req, res) => {
   // ma abhi 0 hai) lekin liter/kg quantity record ho chuki thi, list se
   // GHAYAB ho jaati thi jabke DB mein save thi. Ab milkLiter > 0 wali entries
   // bhi hamesha dikhengi.
+  // Entries filter: koi bhi meaningful transaction wali entry show karo
   const filtered = entries.filter(e =>
     (e.milkLiter || 0) > 0 ||
     (e.totalAmount || 0) > 0 ||
     (e.advanceAmount || 0) > 0 ||
     (e.paymentReceived || 0) > 0 ||
-    (e.discountAmount || 0) > 0
+    (e.vehicleRent || 0) > 0 ||
+    (e.discountAmount || 0) > 0 ||
+    (e.spoiledAmount || 0) > 0
   );
 
   // NOTE: Dedupe yahan NAHI karni — same customer ko same rate pe genuinely 2 baar
@@ -241,7 +244,11 @@ const createSaleLedgerEntry = asyncHandler(async (req, res) => {
   if (req.body.driverId === 'DIRECT' || req.body.driverId === '') {
     req.body.driverId = null;
   }
-
+  // vehicleRent undefined fix — JSON.stringify undefined values remove kar deta hai
+  if (req.body.vehicleRent === undefined || req.body.vehicleRent === null) {
+    req.body.vehicleRent = 0;
+  }
+  
   // Duplicate check: sirf same MongoDB _id wali entry block karo
   // Same values wali 2 alag entries ALLOWED hain — genuinely 2 baar sale ho sakti hai
   if (req.body.id && /^[a-f\d]{24}$/i.test(String(req.body.id))) {
@@ -297,6 +304,10 @@ const bulkCreateSaleLedger = asyncHandler(async (req, res) => {
 const updateSaleLedgerEntry = asyncHandler(async (req, res) => {
   if (req.body.driverId === 'DIRECT' || req.body.driverId === '') {
     req.body.driverId = null;
+  }
+  // vehicleRent undefined fix
+  if (req.body.vehicleRent === undefined || req.body.vehicleRent === null) {
+    req.body.vehicleRent = 0;
   }
   const entry = await SaleLedger.findByIdAndUpdate(req.params.id, req.body, {
     new: true, runValidators: true,
@@ -467,7 +478,19 @@ const updateCustomerProfile = asyncHandler(async (req, res) => {
 const deleteCustomerProfile = asyncHandler(async (req, res) => {
   const profile = await CustomerProfile.findByIdAndDelete(req.params.id);
   if (!profile) throw ApiError.notFound('Customer profile not found');
-  return ApiResponse.ok({ id: req.params.id }, 'Customer deleted').send(res);
+
+  // Profile ke sab sale ledger entries bhi delete karo — cascade delete
+  await SaleLedger.deleteMany({ customerProfileId: req.params.id });
+
+  // customerName se bhi match karo (kuch entries profileId se linked nahi hoti)
+  if (profile.customerName) {
+    await SaleLedger.deleteMany({
+      customerName: { $regex: new RegExp(`^${profile.customerName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') },
+      customerProfileId: null
+    });
+  }
+
+  return ApiResponse.ok({ id: req.params.id }, 'Customer and all associated entries deleted').send(res);
 });
 
 // ─── RUNNING BALANCE CALCULATION ─────────────────────────────────────────────
@@ -487,7 +510,7 @@ const getSupplierRunningBalance = asyncHandler(async (req, res) => {
   let runningBalance = supplier.openingBalance || 0;
   const ledgerWithBalance = entries.map(entry => {
     const e = entry.toObject();
-    runningBalance = runningBalance + e.totalAmount - e.advanceAmount - e.paymentReceived;
+    runningBalance = runningBalance + e.totalAmount - e.advanceAmount - e.paymentReceived - (e.vehicleRent || 0);
     if (e.discountAmount) runningBalance -= e.discountAmount;
     if (e.isSpoiled && e.spoiledAmount) runningBalance -= e.spoiledAmount;
     return { ...e, runningBalance };
@@ -514,7 +537,7 @@ const getCustomerRunningBalance = asyncHandler(async (req, res) => {
   const ledgerWithBalance = entries.map(entry => {
     const e = entry.toObject();
     // Sale ledger: balance increases by sale, decreases by payment received
-    runningBalance = runningBalance + e.totalAmount - e.paymentReceived - e.advanceAmount;
+    runningBalance = runningBalance + e.totalAmount - e.paymentReceived - (e.vehicleRent || 0) - e.advanceAmount;
     if (e.discountAmount) runningBalance -= e.discountAmount;
     return { ...e, runningBalance };
   });
