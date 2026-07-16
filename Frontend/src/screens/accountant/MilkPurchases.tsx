@@ -123,7 +123,9 @@ export default function MilkPurchases() {
     setHistoryLoading(true);
     ledgerApi.getPurchase().then((res: any) => {
       if (res.success && Array.isArray(res.data)) {
-        setBackendHistory(res.data.map((e: any) => ({
+        setBackendHistory(res.data
+          .filter((e: any) => (Number(e.milkLiter) || 0) > 0 || (Number(e.totalAmount) || 0) > 0)
+          .map((e: any) => ({
           id: e._id || e.id,
           date: e.date,
           type: 'Purchase',

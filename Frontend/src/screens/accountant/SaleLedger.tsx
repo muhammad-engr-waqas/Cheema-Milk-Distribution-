@@ -668,7 +668,13 @@ export default function SaleLedger() {
         setResetCount(prev => prev + 1);
       }
     };
+    const handleWindowFocus = () => {
+      if (pendingSyncRef.current === 0 && isOnline()) {
+        setResetCount(prev => prev + 1);
+      }
+    };
     document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', handleWindowFocus);
 
     // FIX: Doosre browser/device se add ki hui sale entries is screen par
     // dikhein, is ke liye har 15 second mein background refresh karo. Ye
@@ -683,6 +689,7 @@ export default function SaleLedger() {
     return () => {
       clearInterval(periodicRefresh);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleWindowFocus);
       window.removeEventListener('dairy-reset', handleReset);
       window.removeEventListener('dairy-customers-updated', handleCustomersUpdated2);
     };
