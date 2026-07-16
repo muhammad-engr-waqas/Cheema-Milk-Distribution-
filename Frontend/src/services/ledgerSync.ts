@@ -280,7 +280,13 @@ export const fullLedgerSyncToBackend = async () => {
       const entries = JSON.parse(raw);
       if (!Array.isArray(entries) || entries.length === 0) continue;
       const date = key.replace('cheema_sale_ledger_', '');
-      await ledgerApi.bulkCreateSale({ date, entries });
+      // DUPLICATE FIX: isManual: false entries milkRecordsApi.createBulk se already
+      // backend SaleLedger mein save ho chuki hain (_addToSaleLedger via milk-records/bulk).
+      // Unhe yahan dobara POST karne se duplicate entry banti hai.
+      // Sirf manual entries (SaleLedger.tsx se add ki gayi) sync karo.
+      const manualOnlyEntries = entries.filter((e: any) => e.isManual === true);
+      if (manualOnlyEntries.length === 0) continue;
+      await ledgerApi.bulkCreateSale({ date, entries: manualOnlyEntries });
     } catch (err) {
       console.warn('[LedgerSync] Sale sync error for', key, err);
     }
@@ -445,6 +451,10 @@ export const pullLedgerFromBackend = async () => {
         date: e.date, time: e.time,
         phoneNumber: e.phoneNumber || '',
         milkLiter: e.milkLiter,
+        fat: e.fat || 0,
+        lr: e.lr || 0,
+        snf: e.snf || 0,
+        totalTs: e.totalTs || 0,
         rate: e.rate, totalAmount: e.totalAmount,
         advanceAmount: e.advanceAmount || 0,
         paymentReceived: e.paymentReceived || 0,

@@ -240,6 +240,9 @@ export default function SaleLedger() {
   // FIX: In-flight backend saves ki count — jab tak koi save chal raha hai,
   // periodic refresh (neeche) usko overwrite nahi karega.
   const pendingSyncRef = useRef(0);
+  // FIX: Last save ka timestamp — save ke baad 15 sec tak refresh block karo
+  // taake newly saved entry backend mein properly save ho sake aur return aaye
+  const lastSaveTimeRef = useRef<number>(0);
   // showEntryModal ka latest value ref mein rakho taake setInterval callback
   // hamesha current value dekhe, stale closure nahi.
   const showEntryModalRef = useRef(false);
@@ -549,7 +552,8 @@ export default function SaleLedger() {
     };
 
     const loadSaleEntries = async () => {
-      // 2. Global Sale Entries
+      // Global Sale Entries — Purchase Ledger jaisa simple approach
+      // Backend = single source of truth, koi merge/cleanup nahi
       try {
         if (isOnline()) {
           const res: any = await ledgerApi.getSale();
@@ -563,6 +567,10 @@ export default function SaleLedger() {
               phoneNumber: e.phoneNumber || '',
               milkUnit: e.milkUnit || 'Liters',
               milkLiter: e.milkLiter || 0,
+              fat: e.fat || 0,
+              lr: e.lr || 0,
+              snf: e.snf || 0,
+              totalTs: e.totalTs || 0,
               rate: e.rate || 0,
               totalAmount: e.totalAmount || 0,
               advanceAmount: e.advanceAmount || 0,
@@ -585,38 +593,7 @@ export default function SaleLedger() {
               spoiledSnf: e.spoiledSnf,
               spoiledTs: e.spoiledTs,
             }));
-
-            // FIX: Backend mein kuch entries missing ho sakti hain (vehicleRent-only etc)
-            // localStorage mein jo entries hain lekin backend mein nahi aayin — merge karo
-            const backendIds = new Set(mapped.map((e: any) => e.id));
-            const localEntries = getAllSaleEntriesGlobalLS();
-            // Local entries jo backend mein nahi hain — inhe preserve karo
-            const localOnlyEntries = localEntries.filter(e => !backendIds.has(e.id));
-
-            // Backend se deleted entries ko localStorage se bhi remove karo
-            // (doosre browser mein delete hua — is browser mein bhi reflect karo)
-            const allLocalKeys = Object.keys(localStorage).filter(k => k.startsWith('cheema_sale_ledger_'));
-            const allBackendCustomerEntries = new Set(mapped.map((e: any) => e.id));
-            allLocalKeys.forEach(key => {
-              try {
-                const entries = JSON.parse(localStorage.getItem(key) || '[]');
-                if (!Array.isArray(entries)) return;
-                // Sirf woh entries rakho jo ya toh backend mein hain ya local-only (pending save)
-                const cleaned = entries.filter((e: any) => {
-                  const isMongoId = /^[a-f\d]{24}$/i.test(e.id || '');
-                  // MongoDB ID wali entries — backend se confirm honi chahiye
-                  if (isMongoId) return allBackendCustomerEntries.has(e.id) || localOnlyEntries.some(lo => lo.id === e.id);
-                  // Local ID — pending save, rakhein
-                  return true;
-                });
-                if (cleaned.length !== entries.length) {
-                  localStorage.setItem(key, JSON.stringify(cleaned));
-                }
-              } catch (_) {}
-            });
-
-            const merged = [...mapped, ...localOnlyEntries];
-            setAllSaleEntries(merged);
+            setAllSaleEntries(mapped);
           }
         } else {
           throw new Error('Offline');
@@ -661,15 +638,24 @@ export default function SaleLedger() {
     // kyunki handleSaveSaleEntry directly state update karta hai
     // full reload se race condition banta hai (backend se stale data aata hai)
 
+    // MilkSales screen se sale save hone par SaleLedger ko fresh fetch karo
+    // (backend ne old entries replace kar di hain — updated data chahiye)
+    const handleMilkSaleCommitted = () => {
+      setResetCount(prev => prev + 1);
+    };
+    window.addEventListener('dairy-milk-sale-committed', handleMilkSaleCommitted);
+
     // FIX: Jab user tab/window switch karke wapas aaye — fresh data lo
     // Yeh doosre browser mein changes reflect karta hai (delete, add etc)
     const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible' && pendingSyncRef.current === 0 && isOnline()) {
+      const secsSinceSave = (Date.now() - lastSaveTimeRef.current) / 1000;
+      if (document.visibilityState === 'visible' && pendingSyncRef.current === 0 && secsSinceSave > 15 && isOnline()) {
         setResetCount(prev => prev + 1);
       }
     };
     const handleWindowFocus = () => {
-      if (pendingSyncRef.current === 0 && isOnline()) {
+      const secsSinceSave = (Date.now() - lastSaveTimeRef.current) / 1000;
+      if (pendingSyncRef.current === 0 && secsSinceSave > 15 && isOnline()) {
         setResetCount(prev => prev + 1);
       }
     };
@@ -681,7 +667,8 @@ export default function SaleLedger() {
     // SIRF tab chalta hai jab koi save in-flight na ho aur entry modal
     // khula na ho (taake user ka active kaam disturb na ho).
     const periodicRefresh = setInterval(() => {
-      if (pendingSyncRef.current === 0 && !showEntryModalRef.current && isOnline()) {
+      const secsSinceSave = (Date.now() - lastSaveTimeRef.current) / 1000;
+      if (pendingSyncRef.current === 0 && !showEntryModalRef.current && secsSinceSave > 15 && isOnline()) {
         setResetCount(prev => prev + 1);
       }
     }, 15000);
@@ -692,6 +679,7 @@ export default function SaleLedger() {
       window.removeEventListener('focus', handleWindowFocus);
       window.removeEventListener('dairy-reset', handleReset);
       window.removeEventListener('dairy-customers-updated', handleCustomersUpdated2);
+      window.removeEventListener('dairy-milk-sale-committed', handleMilkSaleCommitted);
     };
   }, []);
 
@@ -1321,6 +1309,7 @@ export default function SaleLedger() {
 
     // Backend sync — response se real MongoDB _id lo aur local entry update karo
     pendingSyncRef.current++;
+    lastSaveTimeRef.current = Date.now(); // Save time track karo — refresh block ke liye
     syncSaleEntryToBackend(updatedEntry as any)
       .then((res: any) => {
         // Backend ne real _id diya — localStorage + state mein local ID replace karo
@@ -1339,10 +1328,7 @@ export default function SaleLedger() {
       })
       .catch(() => {})
       .finally(() => {
-        // Save complete ke baad bhi 10 sec cooldown — periodic refresh se entry ghayab na ho
-        setTimeout(() => {
-          pendingSyncRef.current = Math.max(0, pendingSyncRef.current - 1);
-        }, 10000);
+        pendingSyncRef.current = Math.max(0, pendingSyncRef.current - 1);
       });
     showToast(labels.successSave, "success");
     setShowEntryModal(false);
@@ -2491,11 +2477,11 @@ export default function SaleLedger() {
                         const pdfRows = displayTimeline.map(t => ({
                           date: fmtDate(t.date),
                           milkLiter: t.milkLiter ? `${Number(t.milkLiter).toFixed(2)} ${t.milkUnit === 'Kg' ? 'Kg' : 'L'}` : '-',
-                          fat: t.fat ? `${Number(t.fat).toFixed(2)}%` : '-',
-                          lr: t.lr ? `${t.lr}` : '-',
-                          snf: t.snf ? `${Number(t.snf).toFixed(2)}%` : '-',
-                          tsPercent: t.fat && t.snf ? `${(Number(t.fat) + Number(t.snf)).toFixed(2)}%` : '-',
-                          totalTs: t.totalTs ? Number(t.totalTs).toFixed(2) : '-',
+                          fat: t.fat && Number(t.fat) > 0 ? `${Number(t.fat).toFixed(2)}%` : '-',
+                          lr: t.lr && Number(t.lr) > 0 ? `${t.lr}` : '-',
+                          snf: t.snf && Number(t.snf) > 0 ? `${Number(t.snf).toFixed(2)}%` : '-',
+                          tsPercent: t.fat && t.snf && Number(t.fat) > 0 && Number(t.snf) > 0 ? `${(Number(t.fat) + Number(t.snf)).toFixed(2)}%` : '-',
+                          totalTs: t.totalTs && Number(t.totalTs) > 0 ? Number(t.totalTs).toFixed(2) : '-',
                           totalAmount: `Rs. ${Number(t.totalAmount).toFixed(2)}`,
                           discountAmount: t.discountAmount ? `- Rs. ${Number(t.discountAmount).toFixed(2)}` : '-',
                           spoiled: t.spoiledAmount ? `Rs. ${Number(t.spoiledAmount).toFixed(2)}` : '-',
@@ -2530,15 +2516,15 @@ export default function SaleLedger() {
                               > <td className="px-3 py-4 whitespace-nowrap"> <span className="font-bold text-slate-800 block group-hover:text-emerald-700 transition-colors">{fmtDate(item.date)}</span> <span className="text-[10px] text-slate-400 font-medium block">{item.time || 'Manual Entry'}</span> </td> <td className="px-3 py-4 text-center whitespace-nowrap font-black text-slate-700 font-mono">
                                   {item.milkLiter ? `${item.milkLiter} ${item.milkUnit === 'Kg' ? 'Kg' : 'L'}` : '—'}
                                 </td> <td className="px-2 py-4 text-center whitespace-nowrap font-bold text-slate-600 font-mono">
-                                  {item.fat != null ? `${Number(item.fat).toFixed(1)}%` : '—'}
+                                  {item.fat != null && Number(item.fat) > 0 ? `${Number(item.fat).toFixed(1)}%` : '—'}
                                 </td> <td className="px-2 py-4 text-center whitespace-nowrap font-bold text-slate-600 font-mono">
-                                  {item.lr != null ? Number(item.lr).toFixed(0) : '—'}
+                                  {item.lr != null && Number(item.lr) > 0 ? Number(item.lr).toFixed(0) : '—'}
                                 </td> <td className="px-2 py-4 text-center whitespace-nowrap font-bold text-slate-600 font-mono">
-                                  {item.snf != null ? `${Number(item.snf).toFixed(2)}%` : '—'}
+                                  {item.snf != null && Number(item.snf) > 0 ? `${Number(item.snf).toFixed(2)}%` : '—'}
                                 </td> <td className="px-2 py-4 text-center whitespace-nowrap font-bold text-indigo-600 font-mono">
-                                  {item.fat != null && item.snf != null ? `${tsPercent.toFixed(2)}%` : '—'}
+                                  {item.fat != null && item.snf != null && Number(item.fat) > 0 && Number(item.snf) > 0 ? `${tsPercent.toFixed(2)}%` : '—'}
                                 </td> <td className="px-3 py-4 text-center whitespace-nowrap font-bold text-indigo-700 font-mono">
-                                  {item.totalTs != null ? Number(item.totalTs).toFixed(2) : '—'}
+                                  {item.totalTs != null && Number(item.totalTs) > 0 ? Number(item.totalTs).toFixed(2) : '—'}
                                 </td> <td className="px-3 py-4 text-right whitespace-nowrap"> <span className="font-black text-slate-850 font-mono text-xs block">Rs. {fmtAmt(item.totalAmount)}</span>
                                   {item.rate > 0 && <span className="text-[9px] text-slate-400 block pb-0.5">@ Rs. {item.rate}</span>}
                                 </td> <td className="px-3 py-4 text-center whitespace-nowrap">

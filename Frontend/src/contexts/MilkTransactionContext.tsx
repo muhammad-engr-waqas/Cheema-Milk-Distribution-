@@ -257,12 +257,21 @@ export function MilkTransactionProvider({ children }: { children: React.ReactNod
   const setSaleRecordsForDate = (date: string, saleRecords: MilkRecord[]) => {
     setRecords(prev => {
       const incomingIds = new Set(saleRecords.map(r => r.id));
-      const updated = [...prev.filter(r => !incomingIds.has(r.id)), ...saleRecords];
+      // Sale entries: sirf same ID wali entry replace karo — party name se delete nahi
+      // Ek hi customer ko same din mein multiple baar sale ho sakti hai
+      const updated = [
+        ...prev.filter(r => !incomingIds.has(r.id)),
+        ...saleRecords
+      ];
       localStorage.setItem('dairy_milk_records', JSON.stringify(updated));
       return updated;
     });
 
-    _setSaleLedgerForDateLS(date, saleRecords);
+    // NOTE: _setSaleLedgerForDateLS intentionally NOT called here —
+    // SaleLedger.tsx apna data backend se fetch karta hai.
+    // localStorage cheema_sale_ledger_* ko yahan touch karne se
+    // SaleLedger ki isManual:true entries overwrite ho jaati thi.
+
     window.dispatchEvent(new CustomEvent('dairy-sale-saved'));
 
     if (isOnline()) {
@@ -277,6 +286,8 @@ export function MilkTransactionProvider({ children }: { children: React.ReactNod
             return updated;
           });
         }
+        // MilkSales save complete — SaleLedger ko fresh fetch karne ka signal do
+        window.dispatchEvent(new CustomEvent('dairy-milk-sale-committed'));
       }).catch(() => {
         saleRecords.forEach(r => addToQueue('/milk-records', 'POST', r, 'Set sale records'));
       }).finally(() => { endPendingSave(); });
@@ -425,6 +436,8 @@ function _setSaleLedgerForDateLS(date: string, saleRecords: MilkRecord[]) {
   try { const raw = localStorage.getItem(key); if (raw) existingEntries = JSON.parse(raw); } catch(e) {}
 
   const incomingIds = new Set(saleRecords.map(r => r.id));
+  // Sale entries: sirf same ID wali entry replace karo — party name se mat hatao
+  // Ek customer ko same din mein multiple baar sale ho sakti hai
   const otherEntries = existingEntries.filter((e: any) => !incomingIds.has(e.id));
 
   const newLedgerEntries = saleRecords.map(r => {

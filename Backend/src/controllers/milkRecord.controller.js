@@ -193,7 +193,9 @@ const createMilkRecord = asyncHandler(async (req, res) => {
  * @access  Admin, Driver
  */
 const createBulkMilkRecords = asyncHandler(async (req, res) => {
-  const { records, date, routeId } = req.body;
+  const { records, routeId } = req.body;
+  // date body se aaye ya records ke dates use karo
+  const date = req.body.date || (Array.isArray(records) && records[0]?.date) || null;
 
   if (!Array.isArray(records) || records.length === 0) {
     throw ApiError.badRequest('Records array is required');
@@ -207,40 +209,32 @@ const createBulkMilkRecords = asyncHandler(async (req, res) => {
 
   // Existing records for this date+route delete karo (overwrite behavior)
   if (routeId) {
+    // Route-based purchase: same date+route ke records replace karo
     await MilkRecord.deleteMany({ date, type: 'Purchase', routeId });
     await PurchaseLedger.deleteMany({ date, routeId });
   } else {
-    // Manual entries (no routeId): same date+partyName+type ka duplicate avoid karo
-    // Har incoming record ke liye purana record delete karo before insert
-    const purchaseParties = validRecords
-      .filter(r => r.type === 'Purchase')
-      .map(r => r.partyName);
-    const saleParties = validRecords
-      .filter(r => r.type === 'Sale')
-      .map(r => r.partyName);
-
-    if (purchaseParties.length > 0) {
-      const oldPurchases = await MilkRecord.find({
-        date, type: 'Purchase', routeId: { $exists: false },
-        partyName: { $in: purchaseParties },
+    // Manual entries (no routeId):
+    // Purchase duplicates: same date+partyName wali purani entry replace karo
+    const purchaseSaleRecords = validRecords.filter(r => r.type === 'Purchase');
+    for (const r of purchaseSaleRecords) {
+      const recordDate = r.date || date;
+      if (!recordDate) continue;
+      const old = await MilkRecord.find({
+        date: recordDate, type: 'Purchase',
+        routeId: { $exists: false },
+        partyName: { $regex: new RegExp(`^${r.partyName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') },
       }).select('_id').lean();
-      const oldIds = oldPurchases.map(r => r._id);
+      const oldIds = old.map(x => x._id);
       if (oldIds.length > 0) {
         await MilkRecord.deleteMany({ _id: { $in: oldIds } });
         await PurchaseLedger.deleteMany({ milkRecordId: { $in: oldIds } });
       }
     }
-    if (saleParties.length > 0) {
-      const oldSales = await MilkRecord.find({
-        date, type: 'Sale',
-        partyName: { $in: saleParties },
-      }).select('_id').lean();
-      const oldIds = oldSales.map(r => r._id);
-      if (oldIds.length > 0) {
-        await MilkRecord.deleteMany({ _id: { $in: oldIds } });
-        await SaleLedger.deleteMany({ milkRecordId: { $in: oldIds } });
-      }
-    }
+
+    // Sale entries: DELETE NOTHING — ek hi din mein ek party ko multiple baar
+    // sale ho sakti hai (subah alag, sham alag). Replace nahi, add karo.
+    // SaleLedger ki isManual:false entries milkRecordId se linked hain —
+    // delete karna ho toh sirf specific record ka ID use karo, party name se nahi.
   }
 
   const createdRecords = await MilkRecord.insertMany(

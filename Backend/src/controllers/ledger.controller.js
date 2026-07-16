@@ -248,6 +248,20 @@ const createSaleLedgerEntry = asyncHandler(async (req, res) => {
   if (req.body.vehicleRent === undefined || req.body.vehicleRent === null) {
     req.body.vehicleRent = 0;
   }
+
+  // Empty entry guard — agar koi bhi meaningful value nahi toh save mat karo
+  const hasValue =
+    (Number(req.body.milkLiter) || 0) > 0 ||
+    (Number(req.body.totalAmount) || 0) > 0 ||
+    (Number(req.body.advanceAmount) || 0) > 0 ||
+    (Number(req.body.paymentReceived) || 0) > 0 ||
+    (Number(req.body.vehicleRent) || 0) > 0 ||
+    (Number(req.body.discountAmount) || 0) > 0 ||
+    (Number(req.body.spoiledAmount) || 0) > 0;
+
+  if (!hasValue) {
+    return ApiResponse.ok(null, 'Skipped — empty entry has no transaction value').send(res);
+  }
   
   // Duplicate check: sirf same MongoDB _id wali entry block karo
   // Same values wali 2 alag entries ALLOWED hain — genuinely 2 baar sale ho sakti hai
