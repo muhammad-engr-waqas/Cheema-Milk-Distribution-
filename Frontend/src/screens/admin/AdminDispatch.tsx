@@ -3,14 +3,14 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useDispatchContext, RouteCollectionEntry, DispatchRecord } from '../../contexts/DispatchContext';
 import { useVehicleContext } from '../../contexts/VehicleContext';
 import { fmtDate } from '../../utils/dateFormat';
-import { Plus, Save, Truck, ArrowRight, X, FileText, Search, Download } from 'lucide-react';
+import { Plus, Save, Truck, ArrowRight, X, FileText, Search, Download, Trash2 } from 'lucide-react';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
 export default function AdminDispatch() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { dispatches, addDispatch, markDispatchAsSold, receiveDispatch } = useDispatchContext();
+  const { dispatches, addDispatch, markDispatchAsSold, receiveDispatch, deleteDispatch } = useDispatchContext();
   const { vehicles } = useVehicleContext();
 
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -563,6 +563,16 @@ export default function AdminDispatch() {
                           title="Download Driver Dispatch PDF"
                         > <Download className="w-3.5 h-3.5" /> PDF
                         </button>
+
+                        <button
+                          onClick={() => {
+                            if (window.confirm(`Delete dispatch for ${d.driverName} (${fmtDate(d.date)})? This cannot be undone.`)) {
+                              deleteDispatch(d.id);
+                            }
+                          }}
+                          className="w-7 h-7 flex items-center justify-center text-slate-400 hover:bg-red-50 hover:text-red-600 rounded transition-all"
+                          title="Delete dispatch"
+                        > <Trash2 className="w-3.5 h-3.5" /> </button>
 
                         {!isReceived ? (
                            <button

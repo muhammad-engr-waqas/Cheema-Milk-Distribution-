@@ -42,7 +42,8 @@ interface SaleEntry {
   totalAmount: number; // Milk sold in PKR
   advanceAmount: number; // Advance received
   paymentReceived: number; // Net cash received
-  remainingBalance: number; // Previous Balance + Milk Amount - Advance - Cash Received
+  vehicleRent?: number;    // Vehicle Rent (Vichle Rent) - deducts balance
+  remainingBalance: number; // Previous Balance + Milk Amount - Advance - Cash Received - Vehicle Rent
   notes: string;
   isManual: boolean;
   driverId: string;
@@ -105,13 +106,14 @@ const translations = {
     milkAmtPKR: "Milk Sold (Amount in PKR) *",
     advanceReceivedField: "Advance Received (Rs.) [Deducts Balance]",
     cashReceivedField: "Net Cash Received (Paid Cash)",
+    vehicleRentField: "Vichle Rent (Rs.) [Deducts Balance]",
     notes: "Notes / Action Description",
     notesPlaceholder: "e.g., Evening delivery, high thickness",
     calculateFromLiters: "Liters & Rate Calculator",
     liters: "Milk Liters",
     rate: "Rate / Liter",
     previewNewBalance: "Projected Balance Preview",
-    formulaNote: "Formula: New Balance = Prev Balance + Milk Sold - Advance - Cash Paid",
+    formulaNote: "Formula: New Balance = Prev Balance + Milk Sold - Advance - Cash Paid - Vichle Rent",
     saveTransaction: "Save Sale Entry",
     close: "Close Dialog",
     ledgerDetails: "Ledger Activity Ledger Sheet",
@@ -160,7 +162,8 @@ const getAllSaleEntriesGlobalLS_static = (): any[] => {
                 date: e.date || dateStr,
                 totalAmount: Number(e.totalAmount) || Number(e.milkAmtPKR) || 0,
                 advanceAmount: Number(e.advanceAmount) || Number(e.advanceReceived) || 0,
-                paymentReceived: Number(e.paymentReceived) || Number(e.cashPaid) || 0
+                paymentReceived: Number(e.paymentReceived) || Number(e.cashPaid) || 0,
+                vehicleRent: Number(e.vehicleRent) || 0,
               });
             });
           }
@@ -250,6 +253,7 @@ export default function SaleLedger() {
   const [entryAdvance, setEntryAdvance] = useState<string>('');
   const [entryMilkPKR, setEntryMilkPKR] = useState<string>('');
   const [entryCashPaid, setEntryCashPaid] = useState<string>('');
+  const [entryVehicleRent, setEntryVehicleRent] = useState<string>('');
   const [entryNotes, setEntryNotes] = useState<string>('');
   const [entryPaymentType, setEntryPaymentType] = useState<string>('Cash');
   const [entryBankName, setEntryBankName] = useState<string>('None');
@@ -357,6 +361,7 @@ export default function SaleLedger() {
           // CRITICAL: Clear payment inputs so previous entries' data is not leaked/reused
           setEntryAdvance('');
           setEntryCashPaid('');
+          setEntryVehicleRent('');
           setEntryNotes('');
           setEntryPaymentType('Cash');
           setEntryBankName('None');
@@ -390,6 +395,7 @@ export default function SaleLedger() {
           
           setEntryAdvance('');
           setEntryCashPaid('');
+          setEntryVehicleRent('');
           setEntryNotes('');
           setEntryDiscount('');
           
@@ -462,10 +468,8 @@ export default function SaleLedger() {
     }
   };
 
-  const [allSaleEntries, setAllSaleEntries] = useState<SaleEntry[]>(() => {
-    // Cache se FORAN load karo — page open hote hi balances correct dikhein
-    return getAllSaleEntriesGlobalLS_static();
-  });
+  const [allSaleEntries, setAllSaleEntries] = useState<SaleEntry[]>([]);
+  // Empty start — backend se fresh data load hoga immediately
   // Cache se instant load karo — page switch pe loading nahi dikhegi
   const [loadingEntries, setLoadingEntries] = useState<boolean>(() => {
     try {
@@ -491,7 +495,8 @@ export default function SaleLedger() {
                 date: e.date || dateStr,
                 totalAmount: Number(e.totalAmount) || Number(e.milkAmtPKR) || 0,
                 advanceAmount: Number(e.advanceAmount) || Number(e.advanceReceived) || 0,
-                paymentReceived: Number(e.paymentReceived) || Number(e.cashPaid) || 0
+                paymentReceived: Number(e.paymentReceived) || Number(e.cashPaid) || 0,
+                vehicleRent: Number(e.vehicleRent) || 0,
               });
             });
           }
@@ -562,6 +567,7 @@ export default function SaleLedger() {
               totalAmount: e.totalAmount || 0,
               advanceAmount: e.advanceAmount || 0,
               paymentReceived: e.paymentReceived || 0,
+              vehicleRent: e.vehicleRent || 0,
               remainingBalance: e.remainingBalance || 0,
               notes: e.notes || '',
               isManual: e.isManual || false,
@@ -579,7 +585,38 @@ export default function SaleLedger() {
               spoiledSnf: e.spoiledSnf,
               spoiledTs: e.spoiledTs,
             }));
-            setAllSaleEntries(mapped);
+
+            // FIX: Backend mein kuch entries missing ho sakti hain (vehicleRent-only etc)
+            // localStorage mein jo entries hain lekin backend mein nahi aayin — merge karo
+            const backendIds = new Set(mapped.map((e: any) => e.id));
+            const localEntries = getAllSaleEntriesGlobalLS();
+            // Local entries jo backend mein nahi hain — inhe preserve karo
+            const localOnlyEntries = localEntries.filter(e => !backendIds.has(e.id));
+
+            // Backend se deleted entries ko localStorage se bhi remove karo
+            // (doosre browser mein delete hua — is browser mein bhi reflect karo)
+            const allLocalKeys = Object.keys(localStorage).filter(k => k.startsWith('cheema_sale_ledger_'));
+            const allBackendCustomerEntries = new Set(mapped.map((e: any) => e.id));
+            allLocalKeys.forEach(key => {
+              try {
+                const entries = JSON.parse(localStorage.getItem(key) || '[]');
+                if (!Array.isArray(entries)) return;
+                // Sirf woh entries rakho jo ya toh backend mein hain ya local-only (pending save)
+                const cleaned = entries.filter((e: any) => {
+                  const isMongoId = /^[a-f\d]{24}$/i.test(e.id || '');
+                  // MongoDB ID wali entries — backend se confirm honi chahiye
+                  if (isMongoId) return allBackendCustomerEntries.has(e.id) || localOnlyEntries.some(lo => lo.id === e.id);
+                  // Local ID — pending save, rakhein
+                  return true;
+                });
+                if (cleaned.length !== entries.length) {
+                  localStorage.setItem(key, JSON.stringify(cleaned));
+                }
+              } catch (_) {}
+            });
+
+            const merged = [...mapped, ...localOnlyEntries];
+            setAllSaleEntries(merged);
           }
         } else {
           throw new Error('Offline');
@@ -624,18 +661,28 @@ export default function SaleLedger() {
     // kyunki handleSaveSaleEntry directly state update karta hai
     // full reload se race condition banta hai (backend se stale data aata hai)
 
+    // FIX: Jab user tab/window switch karke wapas aaye — fresh data lo
+    // Yeh doosre browser mein changes reflect karta hai (delete, add etc)
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && pendingSyncRef.current === 0 && isOnline()) {
+        setResetCount(prev => prev + 1);
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
     // FIX: Doosre browser/device se add ki hui sale entries is screen par
-    // dikhein, is ke liye har 25 second mein background refresh karo. Ye
+    // dikhein, is ke liye har 15 second mein background refresh karo. Ye
     // SIRF tab chalta hai jab koi save in-flight na ho aur entry modal
     // khula na ho (taake user ka active kaam disturb na ho).
     const periodicRefresh = setInterval(() => {
       if (pendingSyncRef.current === 0 && !showEntryModalRef.current && isOnline()) {
         setResetCount(prev => prev + 1);
       }
-    }, 25000);
+    }, 15000);
 
     return () => {
       clearInterval(periodicRefresh);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener('dairy-reset', handleReset);
       window.removeEventListener('dairy-customers-updated', handleCustomersUpdated2);
     };
@@ -674,7 +721,7 @@ export default function SaleLedger() {
     let cum = Number(profile.openingBalance) || 0;
     previousEntries.forEach(e => {
       const net = (Number(e.totalAmount) || 0) - (Number(e.discountAmount) || 0) - (Number(e.spoiledAmount) || 0);
-      cum = cum + net - Number(e.advanceAmount) - Number(e.paymentReceived);
+      cum = cum + net - Number(e.advanceAmount) - Number(e.paymentReceived) - Number(e.vehicleRent || 0);
     });
 
     return cum;
@@ -744,6 +791,7 @@ export default function SaleLedger() {
   const dailyTotalNetMilkSold = dailyTotalGrossAmount - dailyTotalSpoiledAmount;
 
   const dailyTotalCashReceived = activeDateEntries.reduce((acc, e) => acc + (Number(e.paymentReceived) || 0), 0);
+  const dailyTotalVehicleRent = activeDateEntries.reduce((acc, e) => acc + (Number(e.vehicleRent) || 0), 0);
   const dailyTotalAdvance = activeDateEntries.reduce((acc, e) => acc + (Number(e.advanceAmount) || 0), 0);
 
   const getFlatFilteredDailyEntries = (): SaleEntry[] => {
@@ -994,6 +1042,7 @@ export default function SaleLedger() {
     setEntryAdvance('');
     setEntryMilkPKR('');
     setEntryCashPaid('');
+    setEntryVehicleRent('');
     setEntryDiscount('');
     setEntryNotes('');
     setEntryPaymentType('Cash');
@@ -1077,6 +1126,7 @@ export default function SaleLedger() {
 
     setEntryAdvance(existing.advanceAmount ? existing.advanceAmount.toString() : '');
     setEntryCashPaid(existing.paymentReceived ? existing.paymentReceived.toString() : '');
+    setEntryVehicleRent(existing.vehicleRent ? existing.vehicleRent.toString() : '');
     setEntryNotes(existing.notes || '');
     setEntryPaymentType(existing.paymentType || 'Cash');
     setEntryBankName(existing.bankName || 'None');
@@ -1129,6 +1179,7 @@ export default function SaleLedger() {
     const entryMilkValue = Number(entryMilkPKR) || 0;
     const advanceValue = Number(entryAdvance) || 0;
     const cashValue = Number(entryCashPaid) || 0;
+    const vehicleRentValue = Number(entryVehicleRent) || 0;
     const discountValue = Number(entryDiscount) || 0;
 
     if (!hasMilkVolume && entryMilkValue > 0) {
@@ -1136,7 +1187,7 @@ export default function SaleLedger() {
       return;
     }
 
-    if (!hasMilkVolume && entryMilkValue === 0 && advanceValue === 0 && cashValue === 0 && discountValue === 0 && !entryIsSpoiled) {
+    if (!hasMilkVolume && entryMilkValue === 0 && advanceValue === 0 && cashValue === 0 && discountValue === 0 && vehicleRentValue === 0 && !entryIsSpoiled) {
       showToast('No transaction provided. Enter milk volume or payment details to save.', 'error');
       return;
     }
@@ -1162,7 +1213,7 @@ export default function SaleLedger() {
 
     // Retrieve previous outstanding balance for that exact customer profile up to this exact moment
     const prevBalance = getCustomerCurrentBalance(activeProfileForEntry);
-    const calculatedRemaining = prevBalance + actualMilkAddedToBalance - advanceValue - cashValue;
+    const calculatedRemaining = prevBalance + actualMilkAddedToBalance - advanceValue - cashValue - vehicleRentValue;
 
     // Add company expenses
     if (discountValue > 0) {
@@ -1227,6 +1278,7 @@ export default function SaleLedger() {
       totalAmount: milkValue,
       advanceAmount: advanceValue,
       paymentReceived: cashValue,
+      vehicleRent: Number(vehicleRentValue) || 0,
       remainingBalance: calculatedRemaining,
       notes: entryNotes,
       isManual: true,
@@ -1260,11 +1312,31 @@ export default function SaleLedger() {
       return [...withoutOld, updatedEntry];
     });
 
-    // Backend sync
+    // Backend sync — response se real MongoDB _id lo aur local entry update karo
     pendingSyncRef.current++;
     syncSaleEntryToBackend(updatedEntry as any)
+      .then((res: any) => {
+        // Backend ne real _id diya — localStorage + state mein local ID replace karo
+        const realId = res?.data?._id || res?._id;
+        if (realId && realId !== updatedEntry.id) {
+          const lsKey = `cheema_sale_ledger_${updatedEntry.date}`;
+          try {
+            const entries: SaleEntry[] = JSON.parse(localStorage.getItem(lsKey) || '[]');
+            const updated = entries.map(e => e.id === updatedEntry.id ? { ...e, id: realId, _id: realId } : e);
+            localStorage.setItem(lsKey, JSON.stringify(updated));
+          } catch (_) {}
+          setAllSaleEntries(prev => prev.map(e =>
+            e.id === updatedEntry.id ? { ...e, id: realId } : e
+          ));
+        }
+      })
       .catch(() => {})
-      .finally(() => { pendingSyncRef.current = Math.max(0, pendingSyncRef.current - 1); });
+      .finally(() => {
+        // Save complete ke baad bhi 10 sec cooldown — periodic refresh se entry ghayab na ho
+        setTimeout(() => {
+          pendingSyncRef.current = Math.max(0, pendingSyncRef.current - 1);
+        }, 10000);
+      });
     showToast(labels.successSave, "success");
     setShowEntryModal(false);
 
@@ -1286,14 +1358,24 @@ export default function SaleLedger() {
       localStorage.setItem('cheema_saved_customers', JSON.stringify(updated));
 
       // Remove all ledger entries for this customer from all dates
+      // customerProfileId se bhi match karo aur customerName se bhi
       for (let i = 0; i < localStorage.length; i++) {
         const key = localStorage.key(i);
         if (key && key.startsWith('cheema_sale_ledger_')) {
           const entries: SaleEntry[] = JSON.parse(localStorage.getItem(key) || '[]');
-          const filtered = entries.filter(e => e.customerProfileId !== profileId);
+          const filtered = entries.filter(e =>
+            e.customerProfileId !== profileId &&
+            (e.customerName || '').trim().toLowerCase() !== profileName.trim().toLowerCase()
+          );
           localStorage.setItem(key, JSON.stringify(filtered));
         }
       }
+
+      // allSaleEntries state se bhi hatao
+      setAllSaleEntries(prev => prev.filter(e =>
+        e.customerProfileId !== profileId &&
+        (e.customerName || '').trim().toLowerCase() !== profileName.trim().toLowerCase()
+      ));
 
       // Backend: actual DELETE call (not update/sync)
       // pendingSyncRef guard — warna periodic refresh deleted customer ko
@@ -1375,7 +1457,7 @@ export default function SaleLedger() {
     filtered.forEach(item => {
       const start = running;
       const net = (Number(item.totalAmount) || 0) - (Number(item.discountAmount) || 0) - (Number(item.spoiledAmount) || 0);
-      const end = start + net - Number(item.advanceAmount) - Number(item.paymentReceived);
+      const end = start + net - Number(item.advanceAmount) - Number(item.paymentReceived) - Number(item.vehicleRent || 0);
       
       finalTimeline.push({
         ...item,
@@ -1643,7 +1725,7 @@ export default function SaleLedger() {
                     </div> </div> </div>
 
                 {dailyDateFilter === 'TODAY' && (
-                  <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 w-full lg:w-auto text-left"> <div className="bg-white p-3 border border-slate-150 rounded-xl"> <span className="text-[10px] text-slate-400 block font-bold">NET VOLUME</span> <span className="font-black font-mono text-slate-700 text-xs">{dailyTotalNetLiters.toFixed(2)} Qty</span> </div> <div className="bg-white p-3 border border-slate-150 rounded-xl"> <span className="text-[10px] text-slate-400 block font-bold">{labels.totalMilkSold} (NET)</span> <span className="font-black font-mono text-emerald-800 text-xs">{labels.pkr} {fmtAmt(dailyTotalNetMilkSold)}</span> </div> <div className="bg-white p-3 border border-slate-150 rounded-xl"> <span className="text-[10px] text-slate-400 block font-bold">{labels.cashReceived}</span> <span className="font-black font-mono text-teal-800 text-xs">{labels.pkr} {fmtAmt(dailyTotalCashReceived)}</span> </div> <div className="bg-white p-3 border border-slate-150 rounded-xl"> <span className="text-[10px] text-slate-400 block font-bold">{labels.advanceReceived}</span> <span className="font-black font-mono text-indigo-850 text-xs">{labels.pkr} {fmtAmt(dailyTotalAdvance)}</span> </div> <div className="bg-white p-3 border border-slate-150 rounded-xl"> <span className="text-[10px] text-slate-400 block font-bold">TOTAL ACCOUNTS</span> <span className="font-black font-mono text-slate-500 text-xs">{dailyTotalCustomers} profiles</span> </div> </div>
+                  <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 w-full lg:w-auto text-left"> <div className="bg-white p-3 border border-slate-150 rounded-xl"> <span className="text-[10px] text-slate-400 block font-bold">NET VOLUME</span> <span className="font-black font-mono text-slate-700 text-xs">{dailyTotalNetLiters.toFixed(2)} Qty</span> </div> <div className="bg-white p-3 border border-slate-150 rounded-xl"> <span className="text-[10px] text-slate-400 block font-bold">{labels.totalMilkSold} (NET)</span> <span className="font-black font-mono text-emerald-800 text-xs">{labels.pkr} {fmtAmt(dailyTotalNetMilkSold)}</span> </div> <div className="bg-white p-3 border border-slate-150 rounded-xl"> <span className="text-[10px] text-slate-400 block font-bold">{labels.cashReceived}</span> <span className="font-black font-mono text-teal-800 text-xs">{labels.pkr} {fmtAmt(dailyTotalCashReceived)}</span> </div> <div className="bg-white p-3 border border-orange-100 rounded-xl"> <span className="text-[10px] text-slate-400 block font-bold">{labels.vehicleRentField}</span> <span className="font-black font-mono text-orange-800 text-xs">{labels.pkr} {fmtAmt(dailyTotalVehicleRent)}</span> </div> <div className="bg-white p-3 border border-slate-150 rounded-xl"> <span className="text-[10px] text-slate-400 block font-bold">{labels.advanceReceived}</span> <span className="font-black font-mono text-indigo-850 text-xs">{labels.pkr} {fmtAmt(dailyTotalAdvance)}</span> </div> <div className="bg-white p-3 border border-slate-150 rounded-xl"> <span className="text-[10px] text-slate-400 block font-bold">TOTAL ACCOUNTS</span> <span className="font-black font-mono text-slate-500 text-xs">{dailyTotalCustomers} profiles</span> </div> </div>
                 )}
               </div>
 
@@ -1666,7 +1748,7 @@ export default function SaleLedger() {
                             className={`px-3 py-1 rounded text-xs font-bold transition-all ${showOnlyEntered ? 'bg-emerald-100 text-emerald-800' : 'text-slate-500 hover:bg-slate-100'}`}
                           >
                             Only Entered Today
-                          </button> </div> </div> </div> <div className="overflow-x-auto border border-slate-200 rounded-2xl"> <table className="w-full text-left text-xs text-slate-600"><thead className="bg-slate-50 text-slate-500 font-bold uppercase tracking-wider border-b border-slate-250"><tr><th className="px-4 py-3 text-left">Customer</th> <th className="px-4 py-3 text-center">Status</th> <th className="px-4 py-3 text-left">Previous Balance</th> <th className="px-4 py-3 text-left">Milk Sold (PKR)</th> <th className="px-4 py-3 text-left">Advance Received</th> <th className="px-4 py-3 text-left">Cash Paid</th> <th className="px-4 py-3 text-left font-black text-emerald-800">Remaining Balance</th> <th className="px-4 py-3 text-center w-40">Actions</th></tr></thead><tbody className="divide-y divide-slate-100 bg-white">
+                          </button> </div> </div> </div> <div className="overflow-x-auto border border-slate-200 rounded-2xl"> <table className="w-full text-left text-xs text-slate-600"><thead className="bg-slate-50 text-slate-500 font-bold uppercase tracking-wider border-b border-slate-250"><tr><th className="px-4 py-3 text-left">Customer</th> <th className="px-4 py-3 text-center">Status</th> <th className="px-4 py-3 text-left">Previous Balance</th> <th className="px-4 py-3 text-left">Milk Sold (PKR)</th> <th className="px-4 py-3 text-left">Advance Received</th> <th className="px-4 py-3 text-left">Cash Paid</th> <th className="px-4 py-3 text-left text-orange-700">Vichle Rent</th> <th className="px-4 py-3 text-left font-black text-emerald-800">Remaining Balance</th> <th className="px-4 py-3 text-center w-40">Actions</th></tr></thead><tbody className="divide-y divide-slate-100 bg-white">
                       {customerProfiles.map(p => {
                         // Find matching entry for this date
                         const nameKey = p.customerName.trim().toLowerCase();
@@ -1679,9 +1761,9 @@ export default function SaleLedger() {
                         // Previous Outstanding auto-loads prior to the selection date. Read-only.
                         const prevBal = customerPrevBalanceMap.get(p.id) ?? getCustomerBalanceBeforeDate(p, selectedDate);
                         
-                        // Calculated remaining: Previous outstanding + Milk - Advance - Cash
+                        // Calculated remaining: Previous outstanding + Milk - Advance - Cash - VehicleRent
                         const calculatedRem = entry 
-                          ? prevBal + entry.totalAmount - entry.advanceAmount - entry.paymentReceived
+                          ? prevBal + entry.totalAmount - entry.advanceAmount - entry.paymentReceived - (entry.vehicleRent || 0)
                           : prevBal;
 
                         return (<tr key={p.id} className="hover:bg-slate-50/50 transition">
@@ -1728,6 +1810,11 @@ export default function SaleLedger() {
                             {/* Cash Net Paid */}
                             <td className="px-4 py-3.5 font-mono text-emerald-700 text-left">
                               {entry && entry.paymentReceived > 0 ? `- Rs. ${fmtAmt(entry.paymentReceived)}` : '—'}
+                            </td>
+
+                            {/* Vichle Rent */}
+                            <td className="px-4 py-3.5 font-mono text-orange-700 text-left">
+                              {entry && (entry.vehicleRent || 0) > 0 ? `- Rs. ${fmtAmt(entry.vehicleRent || 0)}` : '—'}
                             </td>
 
                             {/* Remaining Balance calculated sequentially */}
@@ -1918,6 +2005,7 @@ export default function SaleLedger() {
         const milkValue = Number(entryMilkPKR) || 0;
         const advanceValue = Number(entryAdvance) || 0;
         const cashValue = Number(entryCashPaid) || 0;
+        const vehicleRentValue = Number(entryVehicleRent) || 0;
         const discountValue = Number(entryDiscount) || 0;
         let spoiledValue = 0;
         if (entryIsSpoiled) {
@@ -1930,7 +2018,7 @@ export default function SaleLedger() {
         const actualMilkAddedToBalance = milkValue - discountValue - spoiledValue;
 
         // Auto-calculating formula preview
-        const calculatedRemaining = prevBal + actualMilkAddedToBalance - advanceValue - cashValue;
+        const calculatedRemaining = prevBal + actualMilkAddedToBalance - advanceValue - cashValue - vehicleRentValue;
 
         // HISTORY PREVIEW DATA
         const recentHistory = getCustomerTransactionsTimeline(activeProfileForEntry).slice(0, 3);
@@ -2168,6 +2256,16 @@ export default function SaleLedger() {
                         className="w-full px-3 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none text-xs text-slate-710 bg-white font-mono disabled:bg-slate-50 disabled:text-slate-400"
                       /> </div> </div>
 
+                  {/* Vehicle Rent field */}
+                  <div className="grid grid-cols-1 gap-3"> <div> <label className="block text-xs font-bold text-slate-600 mb-1">{labels.vehicleRentField}</label> <input
+                        type="number"
+                        disabled={isEntryReadOnly}
+                        placeholder="e.g. 500"
+                        value={entryVehicleRent}
+                        onChange={(e) => setEntryVehicleRent(e.target.value)}
+                        className="w-full px-3 py-2 border border-orange-300 rounded-xl focus:ring-2 focus:ring-orange-400 outline-none text-xs text-slate-710 bg-white font-mono disabled:bg-slate-50 disabled:text-slate-400"
+                      /> </div> </div>
+
                   {/* Payment Type selection */}
                   <div className="grid grid-cols-2 gap-3 border border-slate-100 p-3 bg-slate-50/50 rounded-xl"> <div> <label className="block text-xs font-bold text-slate-700 mb-1">Payment Type</label> <select
                         value={entryPaymentType}
@@ -2380,6 +2478,7 @@ export default function SaleLedger() {
                           { header: 'Spoiled', dataKey: 'spoiled' },
                           { header: 'Advance', dataKey: 'advanceAmount' },
                           { header: 'Paid', dataKey: 'paymentReceived' },
+                          { header: 'Vichle Rent', dataKey: 'vehicleRent' },
                           { header: 'Balance', dataKey: 'remainingBalanceState' }
                         ];
                         const pdfRows = displayTimeline.map(t => ({
@@ -2395,6 +2494,7 @@ export default function SaleLedger() {
                           spoiled: t.spoiledAmount ? `Rs. ${Number(t.spoiledAmount).toFixed(2)}` : '-',
                           advanceAmount: `- Rs. ${Number(t.advanceAmount).toFixed(2)}`,
                           paymentReceived: `- Rs. ${Number(t.paymentReceived).toFixed(2)}`,
+                          vehicleRent: (t.vehicleRent || 0) > 0 ? `- Rs. ${Number(t.vehicleRent).toFixed(2)}` : '-',
                           remainingBalanceState: `Rs. ${Number(t.remainingBalanceState).toFixed(2)}`
                         }));
                         downloadTransactionsPDF(`${profile.customerName} Ledger Report`, cols, pdfRows, `${profile.customerName}_Ledger`);
@@ -2409,7 +2509,7 @@ export default function SaleLedger() {
                     > <Plus className="w-4 h-4" /> <span>Add New Entry</span> </button> </div> </div>
 
                 {/* Transactions History Listing Panel */}
-                <div className="flex-1 overflow-y-auto p-6 bg-slate-50/10"> <div className="border border-slate-200 rounded-2xl overflow-hidden bg-white shadow-sm overflow-x-auto"> <table className="w-full text-xs text-left"><thead className="bg-slate-50 text-slate-500 font-bold uppercase border-b border-slate-200"><tr><th className="px-3 py-4 text-left">Date/Time</th> <th className="px-3 py-4 text-center">Milk Qty</th> <th className="px-2 py-4 text-center">FAT %</th> <th className="px-2 py-4 text-center">LR</th> <th className="px-2 py-4 text-center">SNF %</th> <th className="px-2 py-4 text-center">TS %</th> <th className="px-3 py-4 text-center font-bold">TF (Kg)</th> <th className="px-3 py-4 text-right">Milk Price</th> <th className="px-3 py-4 text-center">Advance</th> <th className="px-3 py-4 text-center">Net Cash</th> <th className="px-3 py-4 text-center font-bold text-amber-600">Discount</th> <th className="px-3 py-4 text-center">Spoiled Deduct</th> <th className="px-4 py-4 text-right">Remaining Bal</th></tr></thead><tbody className="divide-y divide-slate-100">
+                <div className="flex-1 overflow-y-auto p-6 bg-slate-50/10"> <div className="border border-slate-200 rounded-2xl overflow-hidden bg-white shadow-sm overflow-x-auto"> <table className="w-full text-xs text-left"><thead className="bg-slate-50 text-slate-500 font-bold uppercase border-b border-slate-200"><tr><th className="px-3 py-4 text-left">Date/Time</th> <th className="px-3 py-4 text-center">Milk Qty</th> <th className="px-2 py-4 text-center">FAT %</th> <th className="px-2 py-4 text-center">LR</th> <th className="px-2 py-4 text-center">SNF %</th> <th className="px-2 py-4 text-center">TS %</th> <th className="px-3 py-4 text-center font-bold">TF (Kg)</th> <th className="px-3 py-4 text-right">Milk Price</th> <th className="px-3 py-4 text-center">Advance</th> <th className="px-3 py-4 text-center">Net Cash</th> <th className="px-3 py-4 text-center font-bold text-orange-600">Vichle Rent</th> <th className="px-3 py-4 text-center font-bold text-amber-600">Discount</th> <th className="px-3 py-4 text-center">Spoiled Deduct</th> <th className="px-4 py-4 text-right">Remaining Bal</th></tr></thead><tbody className="divide-y divide-slate-100">
                         {displayTimeline.length > 0 ? [...displayTimeline].reverse().map((item, idx) => {
                           const tsPercent = (item.fat || 0) + (item.snf || 0);
                           return (
@@ -2444,6 +2544,12 @@ export default function SaleLedger() {
                                   {item.paymentReceived > 0 ? (
                                     <span className="px-2 py-0.5 bg-teal-50 text-teal-700 rounded-full font-bold text-[10px] border border-teal-100">
                                       - Rs. {fmtAmt(item.paymentReceived)}
+                                    </span>
+                                  ) : '—'}
+                                </td> <td className="px-3 py-4 text-center whitespace-nowrap">
+                                  {(item.vehicleRent || 0) > 0 ? (
+                                    <span className="px-2 py-0.5 bg-orange-50 text-orange-700 rounded-full font-bold text-[10px] border border-orange-100">
+                                      - Rs. {fmtAmt(item.vehicleRent || 0)}
                                     </span>
                                   ) : '—'}
                                 </td> <td className="px-3 py-4 text-center whitespace-nowrap">

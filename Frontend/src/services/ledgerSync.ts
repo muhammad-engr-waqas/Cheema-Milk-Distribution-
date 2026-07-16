@@ -65,6 +65,7 @@ export const syncDeletePurchaseEntry = async (id: string) => {
 export const syncSaleEntryToBackend = async (entry: Record<string, unknown>) => {
   const sanitizedEntry = {
     ...entry,
+    vehicleRent: Number(entry.vehicleRent) || 0,  // Explicitly include vehicleRent
     driverId: typeof entry.driverId === 'string' && isMongoObjectId(entry.driverId) ? entry.driverId : null
   };
 
