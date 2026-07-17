@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { CreditCard, Search, Trash2, Calendar, DollarSign, Truck, TrendingUp, TrendingDown, X, Plus } from 'lucide-react';
+import { CreditCard, Search, Trash2, Calendar, DollarSign, Truck, TrendingUp, TrendingDown, X, Plus, Edit2, Save } from 'lucide-react';
 import { useAccountContext } from '../../contexts/AccountContext';
 import { useVehicleContext } from '../../contexts/VehicleContext';
 import { fmtDate } from '../../utils/dateFormat';
@@ -12,7 +12,7 @@ const CATEGORIES = ['Salary','Truck Maintenance','Utilities','Food','Income','St
 type Tab = 'history' | 'daily';
 
 export default function ExpenseEntry() {
-  const { accountRecords, addAccountRecord, deleteAccountRecord } = useAccountContext();
+  const { accountRecords, addAccountRecord, updateAccountRecord, deleteAccountRecord } = useAccountContext();
   const { user } = useAuth();
   const { vehicles } = useVehicleContext();
 
@@ -26,7 +26,42 @@ export default function ExpenseEntry() {
   const [dateFilter,   setDateFilter]   = useState('');
   const [dailyDate,    setDailyDate]    = useState(new Date().toISOString().split('T')[0]);
 
+  // Edit modal state
+  const [editingRecord, setEditingRecord] = useState<any>(null);
+  const [editForm, setEditForm] = useState({
+    category: '', method: 'Cash', payer: '', payee: '',
+    amount: '', note: '', date: '', vehicleNumber: ''
+  });
+
   function setF(k: string, v: string) { setForm(f => ({ ...f, [k]: v })); }
+  function setEF(k: string, v: string) { setEditForm(f => ({ ...f, [k]: v })); }
+
+  function openEdit(r: any) {
+    setEditingRecord(r);
+    setEditForm({
+      category: r.category || 'Salary',
+      method: r.method || 'Cash',
+      payer: r.payer || '',
+      payee: r.payee || '',
+      amount: String(r.amount || ''),
+      note: r.note || '',
+      date: r.date || new Date().toISOString().split('T')[0],
+      vehicleNumber: r.vehicleNumber || '',
+    });
+  }
+
+  function handleEditSave() {
+    if (!editingRecord) return;
+    const type = ['Income','Staff Income'].includes(editForm.category) ? 'Income' : 'Expense';
+    updateAccountRecord(editingRecord.id, {
+      type, category: editForm.category, method: editForm.method,
+      payer: editForm.payer, payee: editForm.payee,
+      amount: parseFloat(editForm.amount) || 0,
+      note: editForm.note, date: editForm.date,
+      vehicleNumber: editForm.category === 'Truck Maintenance' ? editForm.vehicleNumber : undefined,
+    });
+    setEditingRecord(null);
+  }
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -70,6 +105,7 @@ export default function ExpenseEntry() {
   const totalIncome  = useMemo(() => accountRecords.filter(r=>r.type==='Income').reduce((s,r)=>s+r.amount,0),  [accountRecords]);
 
   return (
+    <>
     <PageShell
       title="Daily Expenses"
       subtitle="Log payments, salaries, maintenance and other operational costs"
@@ -118,8 +154,8 @@ export default function ExpenseEntry() {
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5"> <div className="relative"> <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[var(--text-muted)]" /> <input type="search" placeholder="Search payee…" value={search} onChange={e=>setSearch(e.target.value)} className="form-input form-input-sm pl-8" /> </div> <select value={catFilter} onChange={e=>setCatFilter(e.target.value)} className="form-input form-input-sm"> <option value="All">All Categories</option>
                   {CATEGORIES.map(c=><option key={c}>{c}</option>)}
                 </select> <input type="date" value={dateFilter} onChange={e=>setDateFilter(e.target.value)} className="form-input form-input-sm" /> </div> <p className="text-xs text-[var(--text-muted)]">{sortedRecords.length} record{sortedRecords.length!==1?'s':''} found</p> <div className="table-wrapper"> <div className="table-scroll"> <table className="data-table"><thead><tr><th>#</th><th>Date</th><th>Category</th> <th>From</th><th>To</th><th>Method</th> <th className="text-right">Amount</th>
-                        {user?.role==='Admin' && <th>Del</th>}</tr></thead><tbody>
-                      {sortedRecords.length === 0 ? (<tr><td colSpan={user?.role==='Admin'?8:7} className="py-10 text-center text-[var(--text-muted)]">No records match your filters.</td></tr>
+                        {(user?.role==='Admin'||user?.role==='Accountant') && <th>Del</th>}</tr></thead><tbody>
+                      {sortedRecords.length === 0 ? (<tr><td colSpan={(user?.role==='Admin'||user?.role==='Accountant')?8:7} className="py-10 text-center text-[var(--text-muted)]">No records match your filters.</td></tr>
                       ) : sortedRecords.map(r => (<tr key={r.id}><td className="text-[var(--text-muted)] font-mono text-xs">#{r.sn}</td> <td className="font-mono text-xs text-[var(--text-secondary)]">{fmtDate(r.date)}</td> <td> <div className="flex flex-col gap-0.5"> <span className={cn('badge text-[9px]',
                                 r.type==='Income' ? 'badge-success' :
                                 r.category==='Truck Maintenance' ? 'badge-warning' :
@@ -130,8 +166,9 @@ export default function ExpenseEntry() {
                             </div> </td> <td className="text-xs text-[var(--text-secondary)] max-w-[100px] truncate">{r.payer}</td> <td className="text-xs font-semibold text-[var(--text-primary)] max-w-[100px] truncate">{r.payee}</td> <td className="text-xs text-[var(--text-muted)] font-mono">{r.method}</td> <td className={cn('text-right font-black font-mono', r.type==='Income'?'text-emerald-600':'text-red-600')}>
                             {r.type==='Income'?'+':'−'} Rs.{r.amount.toLocaleString()}
                           </td>
-                          {user?.role==='Admin' && (
-                            <td> <button onClick={()=>{ if(confirm('Delete this entry?')) deleteAccountRecord(r.id); }}
+                          {(user?.role==='Admin'||user?.role==='Accountant') && (
+                            <td className="flex gap-1"> <button onClick={()=>openEdit(r)}
+                                className="w-7 h-7 rounded-lg flex items-center justify-center text-[var(--text-muted)] hover:bg-blue-50 hover:text-blue-600 transition-all" aria-label="Edit"> <Edit2 className="w-3.5 h-3.5" /> </button> <button onClick={()=>{ if(confirm('Delete this entry?')) deleteAccountRecord(r.id); }}
                                 className="w-7 h-7 rounded-lg flex items-center justify-center text-[var(--text-muted)] hover:bg-red-50 hover:text-red-600 transition-all" aria-label="Delete"> <Trash2 className="w-3.5 h-3.5" /> </button> </td>
                           )}</tr>
                       ))}</tbody></table> </div> </div> </>
@@ -145,15 +182,62 @@ export default function ExpenseEntry() {
                           <div key={m} className="flex justify-between text-xs font-mono"> <span className="text-[var(--text-secondary)]">{m}</span> <strong className="text-[var(--text-primary)]">Rs.{a.toLocaleString()}</strong> </div>
                         ))
                     }
-                  </div> </div> </div> <div className="table-wrapper"> <div className="table-scroll"> <table className="data-table"><thead><tr><th>Category</th><th>From</th><th>To</th><th>Method</th><th>Notes</th><th className="text-right">Amount</th>{user?.role==='Admin'&&<th>Del</th>}</tr></thead><tbody>
-                      {dailyData.recs.length === 0 ? (<tr><td colSpan={user?.role==='Admin'?7:6} className="py-10 text-center text-[var(--text-muted)]">No expenses on this date.</td></tr>
+                  </div> </div> </div> <div className="table-wrapper"> <div className="table-scroll"> <table className="data-table"><thead><tr><th>Category</th><th>From</th><th>To</th><th>Method</th><th>Notes</th><th className="text-right">Amount</th>{(user?.role==='Admin'||user?.role==='Accountant')&&<th>Del</th>}</tr></thead><tbody>
+                      {dailyData.recs.length === 0 ? (<tr><td colSpan={(user?.role==='Admin'||user?.role==='Accountant')?7:6} className="py-10 text-center text-[var(--text-muted)]">No expenses on this date.</td></tr>
                       ) : dailyData.recs.map(r => (<tr key={r.id}><td className="font-semibold text-xs">{r.category}{r.vehicleNumber&&<span className="block font-mono text-[10px] text-[var(--text-muted)]">{r.vehicleNumber}</span>}</td> <td className="text-xs text-[var(--text-secondary)]">{r.payer}</td> <td className="text-xs font-semibold">{r.payee}</td> <td className="text-xs font-mono text-[var(--text-muted)]">{r.method}</td> <td className="text-xs text-[var(--text-muted)] max-w-[120px] truncate">{r.note}</td> <td className="text-right font-black font-mono text-red-600 text-xs">Rs.{r.amount.toLocaleString()}</td>
-                          {user?.role==='Admin'&&(
-                            <td><button onClick={()=>{ if(confirm('Delete?')) deleteAccountRecord(r.id); }}
+                          {(user?.role==='Admin'||user?.role==='Accountant')&&(
+                            <td className="flex gap-1"><button onClick={()=>openEdit(r)}
+                              className="w-7 h-7 rounded-lg flex items-center justify-center text-[var(--text-muted)] hover:bg-blue-50 hover:text-blue-600 transition-all" aria-label="Edit"> <Edit2 className="w-3.5 h-3.5"/></button><button onClick={()=>{ if(confirm('Delete?')) deleteAccountRecord(r.id); }}
                               className="w-7 h-7 rounded-lg flex items-center justify-center text-[var(--text-muted)] hover:bg-red-50 hover:text-red-600 transition-all" aria-label="Delete"> <Trash2 className="w-3.5 h-3.5"/></button></td>
                           )}</tr>
                       ))}</tbody></table> </div> </div> </>
           )}
         </div> </div> </PageShell>
+
+      {/* ── Edit Modal ── */}
+      {editingRecord && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200">
+              <h3 className="font-black text-slate-800 flex items-center gap-2"><Edit2 className="w-4 h-4 text-blue-500"/>Edit Entry</h3>
+              <button onClick={()=>setEditingRecord(null)} className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-slate-100"><X className="w-4 h-4"/></button>
+            </div>
+            <div className="p-5 space-y-3">
+              <div><label className="form-label">Category</label>
+                <select className="form-input mt-1" value={editForm.category} onChange={e=>setEF('category',e.target.value)}>
+                  {CATEGORIES.map(c=><option key={c}>{c}</option>)}
+                </select></div>
+              {editForm.category==='Truck Maintenance' && (
+                <div><label className="form-label">Vehicle</label>
+                  <select className="form-input mt-1" value={editForm.vehicleNumber} onChange={e=>setEF('vehicleNumber',e.target.value)}>
+                    <option value="">Select vehicle…</option>
+                    {vehicles.map(v=><option key={v.id} value={v.vehicleNumber}>{v.vehicleNumber} — {v.name}</option>)}
+                  </select></div>
+              )}
+              <div className="grid grid-cols-2 gap-3">
+                <div><label className="form-label">Date</label>
+                  <input type="date" className="form-input mt-1" value={editForm.date} onChange={e=>setEF('date',e.target.value)}/></div>
+                <div><label className="form-label">Method</label>
+                  <select className="form-input mt-1" value={editForm.method} onChange={e=>setEF('method',e.target.value)}>
+                    {['Cash','Bank Transfer','Cheque','JazzCash','EasyPaisa'].map(m=><option key={m}>{m}</option>)}
+                  </select></div>
+              </div>
+              <div><label className="form-label">Paid From</label>
+                <input className="form-input mt-1" value={editForm.payer} onChange={e=>setEF('payer',e.target.value)} placeholder="Company Cash / HBL Bank"/></div>
+              <div><label className="form-label">Paid To</label>
+                <input className="form-input mt-1" value={editForm.payee} onChange={e=>setEF('payee',e.target.value)} placeholder="Recipient name"/></div>
+              <div><label className="form-label">Amount (Rs.)</label>
+                <input type="number" step="0.01" min="0" className="form-input mt-1 font-mono" value={editForm.amount} onChange={e=>setEF('amount',e.target.value)}/></div>
+              <div><label className="form-label">Notes</label>
+                <textarea rows={2} className="form-input mt-1 resize-none" value={editForm.note} onChange={e=>setEF('note',e.target.value)}/></div>
+            </div>
+            <div className="flex gap-3 px-5 py-4 border-t border-slate-200">
+              <button onClick={()=>setEditingRecord(null)} className="flex-1 btn btn-secondary py-2.5 text-xs">Cancel</button>
+              <button onClick={handleEditSave} className="flex-1 btn btn-primary py-2.5 gap-2 text-xs"><Save className="w-3.5 h-3.5"/>Save Changes</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }

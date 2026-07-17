@@ -833,7 +833,7 @@ export default function AccountantAdvances() {
                                     title="Edit Ledger Entry"
                                   > <Edit className="w-3.5 h-3.5" /> </button> <button
                                     onClick={() => handleStartDeleteTx(tx)}
-                                    className="hidden"
+                                    className="text-slate-400 hover:text-red-600 p-1 rounded hover:bg-red-50"
                                     title="Delete Ledger Entry"
                                   > <Trash2 className="w-3.5 h-3.5" /> </button> </div> </td></tr>
                           );

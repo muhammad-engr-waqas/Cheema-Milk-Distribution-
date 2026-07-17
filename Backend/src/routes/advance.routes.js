@@ -17,6 +17,6 @@ router.get('/', getTransactions);
 router.get('/balance/:driverId', getDriverBalance);
 router.post('/', authorize('Admin', 'Accountant'), createTransaction);
 router.put('/:id', authorize('Admin', 'Accountant'), updateTransaction);
-router.delete('/:id', authorize('Admin'), deleteTransaction);
+router.delete('/:id', authorize('Admin', 'Accountant'), deleteTransaction);
 
 module.exports = router;

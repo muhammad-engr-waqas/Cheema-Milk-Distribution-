@@ -34,7 +34,7 @@ interface AdvanceContextType {
 const AdvanceContext = createContext<AdvanceContextType | undefined>(undefined);
 
 export function AdvanceProvider({ children }: { children: ReactNode }) {
-  const { addAccountRecord } = useAccountContext();
+  const { addAccountRecord, updateAccountRecordByAdvanceId, deleteAccountRecordByAdvanceId } = useAccountContext();
 
   const [transactions, setTransactions] = useState<AdvanceTransaction[]>(() => {
     // Instantly localStorage se load karo — page switch pe delay nahi hoga
@@ -52,6 +52,46 @@ export function AdvanceProvider({ children }: { children: ReactNode }) {
     const handleReset = () => setTransactions([]);
     window.addEventListener('dairy-reset', handleReset);
     return () => window.removeEventListener('dairy-reset', handleReset);
+  }, []);
+
+  // Daily Expenses se advance update/delete hone par state refresh karo
+  React.useEffect(() => {
+    const handleAdvanceUpdated = (e: any) => {
+      const advanceId = e.detail?.advanceId;
+      if (!advanceId) return;
+      if (isOnline()) {
+        advancesApi.getAll().then((res: any) => {
+          if (res.success && Array.isArray(res.data)) {
+            const updated = res.data.map((t: any) => ({
+              id: t._id || t.id,
+              driverId: t.driverId?._id || t.driverId,
+              driverName: t.driverName || '',
+              type: t.type, date: t.date, amount: t.amount,
+              category: t.category, description: t.description,
+              createdAt: t.createdAt, paymentMethod: t.paymentMethod,
+              bankAccount: t.bankAccount, returnedByName: t.returnedByName,
+            }));
+            setTransactions(updated);
+            localStorage.setItem('dairy_advances', JSON.stringify(updated));
+          }
+        }).catch(() => {});
+      }
+    };
+    const handleAdvanceDeleted = (e: any) => {
+      const advanceId = e.detail?.advanceId;
+      if (!advanceId) return;
+      setTransactions(prev => {
+        const updated = prev.filter(t => t.id !== advanceId);
+        localStorage.setItem('dairy_advances', JSON.stringify(updated));
+        return updated;
+      });
+    };
+    window.addEventListener('dairy-advance-updated', handleAdvanceUpdated);
+    window.addEventListener('dairy-advance-deleted', handleAdvanceDeleted);
+    return () => {
+      window.removeEventListener('dairy-advance-updated', handleAdvanceUpdated);
+      window.removeEventListener('dairy-advance-deleted', handleAdvanceDeleted);
+    };
   }, []);
 
   useEffect(() => {
@@ -169,7 +209,8 @@ export function AdvanceProvider({ children }: { children: ReactNode }) {
       addToQueue('/advances', 'POST', data, 'Add advance transaction');
     }
 
-    // Automatically file to account ledger
+    // Automatically file to account ledger — advanceId link karo taake edit/delete sync ho sake
+    const advanceRecordId = tempId; // Real ID baad mein update hogi, abhi tempId se link
     if (data.type === 'ADVANCE') {
       addAccountRecord({
         type: 'Expense',
@@ -179,10 +220,10 @@ export function AdvanceProvider({ children }: { children: ReactNode }) {
         payer: 'Company Main',
         payee: data.driverName || `Driver ID: ${data.driverId}`,
         note: `Advance Payment: ${data.description || 'Driver advance given'}${data.bankAccount ? ` (via ${data.bankAccount})` : ''}`,
-        date: data.date
+        date: data.date,
+        advanceId: advanceRecordId,
       });
     } else if (data.type === 'EXPENSE') {
-      // Driver ka actual kharch — yeh real operating expense hai
       addAccountRecord({
         type: 'Expense',
         category: data.category || 'Driver Expense',
@@ -191,7 +232,8 @@ export function AdvanceProvider({ children }: { children: ReactNode }) {
         payer: data.driverName || `Driver ID: ${data.driverId}`,
         payee: 'Operations',
         note: `Driver Expense: ${data.description || 'Trip expense'}`,
-        date: data.date
+        date: data.date,
+        advanceId: advanceRecordId,
       });
     } else if (data.type === 'CASH_RETURN') {
       addAccountRecord({
@@ -202,7 +244,8 @@ export function AdvanceProvider({ children }: { children: ReactNode }) {
         payer: data.returnedByName || data.driverName || `Driver ID: ${data.driverId}`,
         payee: 'Company Main',
         note: `Advance Cash Returned: ${data.description || 'Driver returned unused cash'}${data.returnedByName ? ` by ${data.returnedByName}` : ''}${data.bankAccount ? ` (via ${data.bankAccount})` : ''}`,
-        date: data.date
+        date: data.date,
+        advanceId: advanceRecordId,
       });
     }
   };
@@ -229,6 +272,17 @@ export function AdvanceProvider({ children }: { children: ReactNode }) {
       return updated;
     });
 
+    // AccountRecord bhi sync karo
+    const updateFields: any = {};
+    if (updatedData.amount !== undefined) updateFields.amount = Number(updatedData.amount);
+    if (updatedData.date !== undefined) updateFields.date = updatedData.date;
+    if (updatedData.description !== undefined) updateFields.note = updatedData.description;
+    if (updatedData.paymentMethod !== undefined) updateFields.method = updatedData.paymentMethod;
+    if (updatedData.category !== undefined) updateFields.category = updatedData.category;
+    if (Object.keys(updateFields).length > 0) {
+      updateAccountRecordByAdvanceId(id, updateFields);
+    }
+
     if (isOnline()) {
       advancesApi.update(id, updatedData).catch(() => {
         addToQueue(`/advances/${id}`, 'PUT', updatedData, 'Edit advance transaction');
@@ -244,6 +298,9 @@ export function AdvanceProvider({ children }: { children: ReactNode }) {
       localStorage.setItem('dairy_advances', JSON.stringify(updated));
       return updated;
     });
+
+    // AccountRecord bhi delete karo
+    deleteAccountRecordByAdvanceId(id);
 
     // pendingSavesRef guard — warna background/periodic syncFromBackend()
     // delete abhi backend pe complete hone se pehle hi purana data wapas

@@ -61,6 +61,11 @@ const accountRecordSchema = new mongoose.Schema(
       type: String,
       default: '',
     },
+    advanceId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'AdvanceTransaction',
+      default: null,
+    },
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',

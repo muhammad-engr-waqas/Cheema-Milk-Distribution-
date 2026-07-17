@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { accountsApi, isOnline, isBackendReachable, getToken } from '../services/api';
+import { accountsApi, advancesApi, isOnline, isBackendReachable, getToken } from '../services/api';
 import { addToQueue } from '../services/offlineSync';
 import { useAuth } from './AuthContext';
 
@@ -18,12 +18,16 @@ export interface AccountRecord {
   liters?: number;
   vehicleNumber?: string;
   driverDetails?: string;
+  advanceId?: string;
 }
 
 interface AccountContextType {
   accountRecords: AccountRecord[];
   addAccountRecord: (record: Omit<AccountRecord, 'id' | 'date' | 'time'> & { date?: string; time?: string }) => void;
+  updateAccountRecord: (id: string, data: Partial<AccountRecord>) => void;
+  updateAccountRecordByAdvanceId: (advanceId: string, data: Partial<AccountRecord>) => void;
   deleteAccountRecord: (id: string) => void;
+  deleteAccountRecordByAdvanceId: (advanceId: string) => void;
   syncFromBackend: () => Promise<void>;
 }
 
@@ -44,6 +48,7 @@ const toFrontend = (r: any): AccountRecord => ({
   liters: r.liters,
   vehicleNumber: r.vehicleNumber,
   driverDetails: r.driverDetails,
+  advanceId: r.advanceId || undefined,
 });
 
 export function AccountProvider({ children }: { children: React.ReactNode }) {
@@ -162,19 +167,68 @@ export function AccountProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const updateAccountRecord = (id: string, data: Partial<AccountRecord>) => {
+    setAccountRecords(prev => {
+      const updated = prev.map(r => r.id === id ? { ...r, ...data } : r);
+      localStorage.setItem('dairy_account_records', JSON.stringify(updated));
+      return updated;
+    });
+    beginPendingSave();
+    if (isOnline()) {
+      accountsApi.update(id, data)
+        .then(() => {
+          // Reverse sync: AccountRecord update hone ke baad AdvanceTransaction bhi update karo
+          const record = accountRecords.find(r => r.id === id);
+          const advId = record?.advanceId;
+          if (advId) {
+            const advUpdate: any = {};
+            if (data.amount !== undefined) advUpdate.amount = data.amount;
+            if (data.date !== undefined) advUpdate.date = data.date;
+            if (data.note !== undefined) advUpdate.description = data.note;
+            if (data.method !== undefined) advUpdate.paymentMethod = data.method;
+            if (Object.keys(advUpdate).length > 0) {
+              advancesApi.update(advId, advUpdate)
+                .then(() => window.dispatchEvent(new CustomEvent('dairy-advance-updated', { detail: { advanceId: advId } })))
+                .catch(() => {});
+            }
+          }
+        })
+        .catch(() => addToQueue(`/accounts/${id}`, 'PUT', data, 'Update account record'))
+        .finally(() => endPendingSave());
+    } else {
+      addToQueue(`/accounts/${id}`, 'PUT', data, 'Update account record');
+      endPendingSave();
+    }
+  };
+
+  const updateAccountRecordByAdvanceId = (advanceId: string, data: Partial<AccountRecord>) => {
+    const record = accountRecords.find(r => r.advanceId === advanceId);
+    if (!record) return;
+    updateAccountRecord(record.id, data);
+  };
+
   const deleteAccountRecord = (id: string) => {
+    // advanceId store karo delete se pehle
+    const record = accountRecords.find(r => r.id === id);
+    const advanceId = record?.advanceId;
+
     setAccountRecords(prev => {
       const updated = prev.filter(r => r.id !== id);
       localStorage.setItem('dairy_account_records', JSON.stringify(updated));
       return updated;
     });
 
-    // pendingSavesRef guard — warna background/periodic syncFromBackend()
-    // delete abhi backend pe complete hone se pehle hi purana data wapas
-    // la sakta hai aur deleted record dobara dikhne lagta hai.
     beginPendingSave();
     if (isOnline()) {
       accountsApi.delete(id)
+        .then(() => {
+          // Reverse sync: AccountRecord delete hone ke baad AdvanceTransaction bhi delete karo
+          if (advanceId) {
+            advancesApi.delete(advanceId).catch(() => {});
+            // AdvanceContext ko refresh karo
+            window.dispatchEvent(new CustomEvent('dairy-advance-deleted', { detail: { advanceId } }));
+          }
+        })
         .catch(() => addToQueue(`/accounts/${id}`, 'DELETE', undefined, 'Delete account record'))
         .finally(() => endPendingSave());
     } else {
@@ -183,8 +237,19 @@ export function AccountProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const deleteAccountRecordByAdvanceId = (advanceId: string) => {
+    const record = accountRecords.find(r => r.advanceId === advanceId);
+    if (!record) return;
+    deleteAccountRecord(record.id);
+  };
+
   return (
-    <AccountContext.Provider value={{ accountRecords, addAccountRecord, deleteAccountRecord, syncFromBackend }}>
+    <AccountContext.Provider value={{
+      accountRecords, addAccountRecord,
+      updateAccountRecord, updateAccountRecordByAdvanceId,
+      deleteAccountRecord, deleteAccountRecordByAdvanceId,
+      syncFromBackend
+    }}>
       {children}
     </AccountContext.Provider>
   );

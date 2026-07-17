@@ -188,6 +188,7 @@ export const accountsApi = {
   getAll: (params?: Record<string, string>) => apiRequest(`/accounts${qs(params)}`),
   getSummary: (params?: Record<string, string>) => apiRequest(`/accounts/summary${qs(params)}`),
   create: (data: unknown) => apiRequest('/accounts', { method: 'POST', body: data }),
+  update: (id: string, data: unknown) => apiRequest(`/accounts/${id}`, { method: 'PUT', body: data }),
   delete: (id: string) => apiRequest(`/accounts/${id}`, { method: 'DELETE' }),
 };
 

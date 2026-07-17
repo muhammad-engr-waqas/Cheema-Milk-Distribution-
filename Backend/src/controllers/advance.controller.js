@@ -92,16 +92,57 @@ const updateTransaction = asyncHandler(async (req, res) => {
     { new: true, runValidators: true }
   );
   if (!transaction) throw ApiError.notFound('Transaction not found');
+
+  // AccountRecord bhi sync karo — advanceId se ya note/payee match se
+  const updateFields = {};
+  if (req.body.amount !== undefined) updateFields.amount = Number(req.body.amount);
+  if (req.body.date !== undefined) updateFields.date = req.body.date;
+  if (req.body.description !== undefined) updateFields.note = req.body.description;
+  if (req.body.paymentMethod !== undefined) updateFields.method = req.body.paymentMethod;
+  if (req.body.category !== undefined) updateFields.category = req.body.category;
+
+  if (Object.keys(updateFields).length > 0) {
+    // Pehle advanceId se try karo (naye entries)
+    const byAdvanceId = await AccountRecord.findOneAndUpdate(
+      { advanceId: req.params.id },
+      updateFields,
+      { new: true }
+    );
+    // Agar advanceId nahi mila — payee name + category se match karo (purani entries)
+    if (!byAdvanceId && transaction.driverName) {
+      await AccountRecord.findOneAndUpdate(
+        {
+          payee: { $regex: new RegExp(transaction.driverName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i') },
+          category: { $in: ['Driver Advance', 'Driver Expense', 'Driver Advance Return'] },
+          date: transaction.date,
+        },
+        updateFields
+      );
+    }
+  }
+
   return ApiResponse.ok(transaction, 'Transaction updated').send(res);
 });
 
 /**
  * @route   DELETE /api/advances/:id
- * @access  Admin
+ * @access  Admin, Accountant
  */
 const deleteTransaction = asyncHandler(async (req, res) => {
   const transaction = await AdvanceTransaction.findByIdAndDelete(req.params.id);
   if (!transaction) throw ApiError.notFound('Transaction not found');
+
+  // AccountRecord bhi delete karo
+  const byAdvanceId = await AccountRecord.findOneAndDelete({ advanceId: req.params.id });
+  // Agar advanceId nahi mila — fallback: payee + category + date match
+  if (!byAdvanceId && transaction.driverName) {
+    await AccountRecord.findOneAndDelete({
+      payee: { $regex: new RegExp(transaction.driverName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i') },
+      category: { $in: ['Driver Advance', 'Driver Expense', 'Driver Advance Return'] },
+      date: transaction.date,
+    });
+  }
+
   return ApiResponse.ok({ id: req.params.id }, 'Transaction deleted').send(res);
 });
 

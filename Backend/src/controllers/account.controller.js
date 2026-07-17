@@ -43,6 +43,21 @@ const createAccountRecord = asyncHandler(async (req, res) => {
 });
 
 /**
+ * @route   PUT /api/accounts/:id
+ * @desc    Account record update karo
+ * @access  Admin, Accountant
+ */
+const updateAccountRecord = asyncHandler(async (req, res) => {
+  const record = await AccountRecord.findByIdAndUpdate(
+    req.params.id,
+    { ...req.body },
+    { new: true, runValidators: true }
+  );
+  if (!record) throw ApiError.notFound('Account record not found');
+  return ApiResponse.ok(record, 'Record updated').send(res);
+});
+
+/**
  * @route   DELETE /api/accounts/:id
  * @access  Admin, Accountant
  */
@@ -91,4 +106,4 @@ const getFinancialSummary = asyncHandler(async (req, res) => {
   }).send(res);
 });
 
-module.exports = { getAccountRecords, createAccountRecord, deleteAccountRecord, getFinancialSummary };
+module.exports = { getAccountRecords, createAccountRecord, updateAccountRecord, deleteAccountRecord, getFinancialSummary };
