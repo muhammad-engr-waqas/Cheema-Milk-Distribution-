@@ -113,7 +113,7 @@ const translations = {
     liters: "Milk Liters",
     rate: "Rate / Liter",
     previewNewBalance: "Projected Balance Preview",
-    formulaNote: "Formula: New Balance = Prev Balance + Milk Sold - Advance - Cash Paid - Vichle Rent",
+    formulaNote: "Formula: New Balance = Prev Balance + Milk Sold + Vichle Rent - Advance - Cash Paid",
     saveTransaction: "Save Sale Entry",
     close: "Close Dialog",
     ledgerDetails: "Ledger Activity Ledger Sheet",
@@ -716,7 +716,7 @@ export default function SaleLedger() {
     let cum = Number(profile.openingBalance) || 0;
     previousEntries.forEach(e => {
       const net = (Number(e.totalAmount) || 0) - (Number(e.discountAmount) || 0) - (Number(e.spoiledAmount) || 0);
-      cum = cum + net - Number(e.advanceAmount) - Number(e.paymentReceived) - Number(e.vehicleRent || 0);
+      cum = cum + net - Number(e.advanceAmount) - Number(e.paymentReceived) + Number(e.vehicleRent || 0);
     });
 
     return cum;
@@ -1208,7 +1208,7 @@ export default function SaleLedger() {
 
     // Retrieve previous outstanding balance for that exact customer profile up to this exact moment
     const prevBalance = getCustomerCurrentBalance(activeProfileForEntry);
-    const calculatedRemaining = prevBalance + actualMilkAddedToBalance - advanceValue - cashValue - vehicleRentValue;
+    const calculatedRemaining = prevBalance + actualMilkAddedToBalance + vehicleRentValue - advanceValue - cashValue;
 
     // Add company expenses
     if (discountValue > 0) {
@@ -1450,7 +1450,9 @@ export default function SaleLedger() {
     filtered.forEach(item => {
       const start = running;
       const net = (Number(item.totalAmount) || 0) - (Number(item.discountAmount) || 0) - (Number(item.spoiledAmount) || 0);
-      const end = start + net - Number(item.advanceAmount) - Number(item.paymentReceived) - Number(item.vehicleRent || 0);
+      // vehicleRent balance BADHATA hai — customer par extra charge hai (milk jaisi)
+      // advance aur cash payment balance GHATAATAY hain — customer ne diya
+      const end = start + net + Number(item.vehicleRent || 0) - Number(item.advanceAmount) - Number(item.paymentReceived);
       
       finalTimeline.push({
         ...item,
@@ -1754,9 +1756,9 @@ export default function SaleLedger() {
                         // Previous Outstanding auto-loads prior to the selection date. Read-only.
                         const prevBal = customerPrevBalanceMap.get(p.id) ?? getCustomerBalanceBeforeDate(p, selectedDate);
                         
-                        // Calculated remaining: Previous outstanding + Milk - Advance - Cash - VehicleRent
+                        // Calculated remaining: Previous outstanding + Milk + VehicleRent - Advance - Cash
                         const calculatedRem = entry 
-                          ? prevBal + entry.totalAmount - entry.advanceAmount - entry.paymentReceived - (entry.vehicleRent || 0)
+                          ? prevBal + entry.totalAmount + (entry.vehicleRent || 0) - entry.advanceAmount - entry.paymentReceived
                           : prevBal;
 
                         return (<tr key={p.id} className="hover:bg-slate-50/50 transition">
@@ -2011,7 +2013,7 @@ export default function SaleLedger() {
         const actualMilkAddedToBalance = milkValue - discountValue - spoiledValue;
 
         // Auto-calculating formula preview
-        const calculatedRemaining = prevBal + actualMilkAddedToBalance - advanceValue - cashValue - vehicleRentValue;
+        const calculatedRemaining = prevBal + actualMilkAddedToBalance + vehicleRentValue - advanceValue - cashValue;
 
         // HISTORY PREVIEW DATA
         const recentHistory = getCustomerTransactionsTimeline(activeProfileForEntry).slice(0, 3);

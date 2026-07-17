@@ -14,7 +14,7 @@ router.use(protect);
 
 router.get('/', authorize('Admin', 'Accountant', 'MilkTester'), getMilkRecords);
 router.post('/', authorize('Admin', 'Accountant', 'MilkTester'), createMilkRecord);
-router.post('/bulk', authorize('Admin', 'MilkTester'), createBulkMilkRecords);
-router.delete('/:id', authorize('Admin'), deleteMilkRecord);
+router.post('/bulk', authorize('Admin', 'Accountant', 'MilkTester'), createBulkMilkRecords);
+router.delete('/:id', authorize('Admin', 'Accountant'), deleteMilkRecord);
 
 module.exports = router;
