@@ -106,7 +106,7 @@ const translations = {
     milkAmtPKR: "Milk Sold (Amount in PKR) *",
     advanceReceivedField: "Advance Received (Rs.) [Deducts Balance]",
     cashReceivedField: "Net Cash Received (Paid Cash)",
-    vehicleRentField: "Vichle Rent (Rs.) [Deducts Balance]",
+    vehicleRentField: "Vichle Rent (Rs.) [Adds Balance]",
     notes: "Notes / Action Description",
     notesPlaceholder: "e.g., Evening delivery, high thickness",
     calculateFromLiters: "Liters & Rate Calculator",
