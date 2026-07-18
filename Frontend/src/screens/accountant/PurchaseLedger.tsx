@@ -2614,7 +2614,7 @@ export default function PurchaseLedger() {
                                 </td> <td className="px-2 py-4 text-center whitespace-nowrap font-bold text-slate-600 font-mono">
                                   {item.fat != null ? `${Number(item.fat).toFixed(1)}%` : '—'}
                                 </td> <td className="px-2 py-4 text-center whitespace-nowrap font-bold text-slate-600 font-mono">
-                                  {item.lr != null ? Number(item.lr).toFixed(0) : '—'}
+                                  {item.lr != null ? Number(item.lr) : '—'}
                                 </td> <td className="px-2 py-4 text-center whitespace-nowrap font-bold text-slate-600 font-mono">
                                   {item.snf != null ? `${Number(item.snf).toFixed(2)}%` : '—'}
                                 </td> <td className="px-2 py-4 text-center whitespace-nowrap font-bold text-indigo-600 font-mono">

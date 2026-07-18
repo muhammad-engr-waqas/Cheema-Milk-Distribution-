@@ -1883,7 +1883,7 @@ export default function SaleLedger() {
                             ...e,
                             milkQtyStr: e.milkLiter > 0
                               ? e.milkUnit === 'Kg'
-                                ? `${e.milkLiter} L (${(e.milkLiter * 1.03).toFixed(2)} Kg)`
+                                ? `${(e.milkLiter * 1.03).toFixed(2)} Kg`
                                 : `${e.milkLiter} L`
                               : '-'
                           }));
@@ -1916,7 +1916,7 @@ export default function SaleLedger() {
                                   )}
                                   {(item.fat !== undefined || item.lr !== undefined || item.totalTs !== undefined) && (
                                     <span className="text-[9px] bg-slate-50 text-slate-550 border border-slate-100 rounded px-1 py-0.5 inline-block mt-0.5">
-                                      Fat: {item.fat?.toFixed(1)}% | LR: {item.lr?.toFixed(0)} | TS: {item.totalTs?.toFixed(2)}
+                                      Fat: {item.fat?.toFixed(1)}% | LR: {item.lr !== undefined ? Number(item.lr) : '-'} | TS: {item.totalTs?.toFixed(2)}
                                     </span>
                                   )}
                                 </div> </td> <td className="px-4 py-3 font-mono text-indigo-700">-Rs.{fmtAmt(item.advanceAmount)}</td> <td className="px-4 py-3"> <span className="font-mono text-emerald-700 font-bold block">-Rs.{fmtAmt(item.paymentReceived)}</span>
@@ -2484,7 +2484,7 @@ export default function SaleLedger() {
                           date: fmtDate(t.date),
                           milkLiter: t.milkLiter
                             ? t.milkUnit === 'Kg'
-                              ? `${Number(t.milkLiter).toFixed(2)} L (${(Number(t.milkLiter) * 1.03).toFixed(2)} Kg)`
+                              ? `${(Number(t.milkLiter) * 1.03).toFixed(2)} Kg`
                               : `${Number(t.milkLiter).toFixed(2)} L`
                             : '-',
                           fat: t.fat && Number(t.fat) > 0 ? `${Number(t.fat).toFixed(2)}%` : '-',
@@ -2528,7 +2528,7 @@ export default function SaleLedger() {
                                 </td> <td className="px-2 py-4 text-center whitespace-nowrap font-bold text-slate-600 font-mono">
                                   {item.fat != null && Number(item.fat) > 0 ? `${Number(item.fat).toFixed(1)}%` : '—'}
                                 </td> <td className="px-2 py-4 text-center whitespace-nowrap font-bold text-slate-600 font-mono">
-                                  {item.lr != null && Number(item.lr) > 0 ? Number(item.lr).toFixed(0) : '—'}
+                                  {item.lr != null && Number(item.lr) > 0 ? Number(item.lr) : '—'}
                                 </td> <td className="px-2 py-4 text-center whitespace-nowrap font-bold text-slate-600 font-mono">
                                   {item.snf != null && Number(item.snf) > 0 ? `${Number(item.snf).toFixed(2)}%` : '—'}
                                 </td> <td className="px-2 py-4 text-center whitespace-nowrap font-bold text-indigo-600 font-mono">
