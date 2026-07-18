@@ -716,7 +716,7 @@ export default function SaleLedger() {
     let cum = Number(profile.openingBalance) || 0;
     previousEntries.forEach(e => {
       const net = (Number(e.totalAmount) || 0) - (Number(e.discountAmount) || 0) - (Number(e.spoiledAmount) || 0);
-      cum = cum + net - Number(e.advanceAmount) - Number(e.paymentReceived) + Number(e.vehicleRent || 0);
+      cum = Math.round((cum + net - Number(e.advanceAmount) - Number(e.paymentReceived) + Number(e.vehicleRent || 0)) * 100) / 100;
     });
 
     return cum;
@@ -1208,7 +1208,7 @@ export default function SaleLedger() {
 
     // Retrieve previous outstanding balance for that exact customer profile up to this exact moment
     const prevBalance = getCustomerCurrentBalance(activeProfileForEntry);
-    const calculatedRemaining = prevBalance + actualMilkAddedToBalance + vehicleRentValue - advanceValue - cashValue;
+    const calculatedRemaining = Math.round((prevBalance + actualMilkAddedToBalance + vehicleRentValue - advanceValue - cashValue) * 100) / 100;
 
     // Add company expenses
     if (discountValue > 0) {
@@ -1452,7 +1452,7 @@ export default function SaleLedger() {
       const net = (Number(item.totalAmount) || 0) - (Number(item.discountAmount) || 0) - (Number(item.spoiledAmount) || 0);
       // vehicleRent balance BADHATA hai — customer par extra charge hai (milk jaisi)
       // advance aur cash payment balance GHATAATAY hain — customer ne diya
-      const end = start + net + Number(item.vehicleRent || 0) - Number(item.advanceAmount) - Number(item.paymentReceived);
+      const end = Math.round((start + net + Number(item.vehicleRent || 0) - Number(item.advanceAmount) - Number(item.paymentReceived)) * 100) / 100;
       
       finalTimeline.push({
         ...item,
@@ -1881,7 +1881,11 @@ export default function SaleLedger() {
                           ];
                           const enrichedList = filteredDailyEntriesFlat.map(e => ({
                             ...e,
-                            milkQtyStr: e.milkLiter > 0 ? `${e.milkLiter} ${e.milkUnit || 'Liters'}` : '-'
+                            milkQtyStr: e.milkLiter > 0
+                              ? e.milkUnit === 'Kg'
+                                ? `${e.milkLiter} L (${(e.milkLiter * 1.03).toFixed(2)} Kg)`
+                                : `${e.milkLiter} L`
+                              : '-'
                           }));
                           downloadTransactionsPDF('Sales History Report', cols, enrichedList, 'sales_report');
                         }}
@@ -2013,7 +2017,7 @@ export default function SaleLedger() {
         const actualMilkAddedToBalance = milkValue - discountValue - spoiledValue;
 
         // Auto-calculating formula preview
-        const calculatedRemaining = prevBal + actualMilkAddedToBalance + vehicleRentValue - advanceValue - cashValue;
+        const calculatedRemaining = Math.round((prevBal + actualMilkAddedToBalance + vehicleRentValue - advanceValue - cashValue) * 100) / 100;
 
         // HISTORY PREVIEW DATA
         const recentHistory = getCustomerTransactionsTimeline(activeProfileForEntry).slice(0, 3);
@@ -2478,7 +2482,11 @@ export default function SaleLedger() {
                         ];
                         const pdfRows = displayTimeline.map(t => ({
                           date: fmtDate(t.date),
-                          milkLiter: t.milkLiter ? `${Number(t.milkLiter).toFixed(2)} ${t.milkUnit === 'Kg' ? 'Kg' : 'L'}` : '-',
+                          milkLiter: t.milkLiter
+                            ? t.milkUnit === 'Kg'
+                              ? `${Number(t.milkLiter).toFixed(2)} L (${(Number(t.milkLiter) * 1.03).toFixed(2)} Kg)`
+                              : `${Number(t.milkLiter).toFixed(2)} L`
+                            : '-',
                           fat: t.fat && Number(t.fat) > 0 ? `${Number(t.fat).toFixed(2)}%` : '-',
                           lr: t.lr && Number(t.lr) > 0 ? `${t.lr}` : '-',
                           snf: t.snf && Number(t.snf) > 0 ? `${Number(t.snf).toFixed(2)}%` : '-',
@@ -2516,7 +2524,7 @@ export default function SaleLedger() {
                                 className="hover:bg-slate-50/80 transition ease-in-out cursor-pointer group text-slate-700"
                                 title="Click to edit/view this entry"
                               > <td className="px-3 py-4 whitespace-nowrap"> <span className="font-bold text-slate-800 block group-hover:text-emerald-700 transition-colors">{fmtDate(item.date)}</span> <span className="text-[10px] text-slate-400 font-medium block">{item.time || 'Manual Entry'}</span> </td> <td className="px-3 py-4 text-center whitespace-nowrap font-black text-slate-700 font-mono">
-                                  {item.milkLiter ? `${item.milkLiter} ${item.milkUnit === 'Kg' ? 'Kg' : 'L'}` : '—'}
+                                  {item.milkLiter ? (item.milkUnit === 'Kg' ? <span>{item.milkLiter} L<span className="block text-[9px] font-normal text-slate-400">({(item.milkLiter * 1.03).toFixed(2)} Kg)</span></span> : `${item.milkLiter} L`) : '—'}
                                 </td> <td className="px-2 py-4 text-center whitespace-nowrap font-bold text-slate-600 font-mono">
                                   {item.fat != null && Number(item.fat) > 0 ? `${Number(item.fat).toFixed(1)}%` : '—'}
                                 </td> <td className="px-2 py-4 text-center whitespace-nowrap font-bold text-slate-600 font-mono">

@@ -551,8 +551,8 @@ const getCustomerRunningBalance = asyncHandler(async (req, res) => {
   const ledgerWithBalance = entries.map(entry => {
     const e = entry.toObject();
     // Sale ledger: balance increases by sale + vehicleRent, decreases by payment received
-    runningBalance = runningBalance + e.totalAmount + (e.vehicleRent || 0) - e.paymentReceived - e.advanceAmount;
-    if (e.discountAmount) runningBalance -= e.discountAmount;
+    runningBalance = Math.round((runningBalance + e.totalAmount + (e.vehicleRent || 0) - e.paymentReceived - e.advanceAmount) * 100) / 100;
+    if (e.discountAmount) runningBalance = Math.round((runningBalance - e.discountAmount) * 100) / 100;
     return { ...e, runningBalance };
   });
 

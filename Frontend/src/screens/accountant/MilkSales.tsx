@@ -219,7 +219,7 @@ export default function MilkSales() {
 
     // Prepare table columns and rows
     const columns = [
-      "S.No.", "Date", "Unit", "Party Name", "Volume (L)",
+      "S.No.", "Date", "Unit", "Party Name", "Volume",
       "Fat (%)", "LR", "SNF (%)", "TS (%)",
       "Total TS", "Rate (Rs)", "Amount (Rs)"
     ];
@@ -233,7 +233,9 @@ export default function MilkSales() {
       fmtDate(record.date),
       record.soldUnit || 'L',
       record.partyName,
-      record.vol.toFixed(2),
+      record.soldUnit === 'Kg'
+        ? `${record.vol.toFixed(2)} L\n(${record.soldQtyKg ? record.soldQtyKg.toFixed(2) : (record.vol * 1.03).toFixed(2)} Kg)`
+        : `${record.vol.toFixed(2)} L`,
       (record.fat || 0).toFixed(1),
       (record.lr || 0).toFixed(1),
       (record.snf || 0).toFixed(2),
@@ -1110,7 +1112,7 @@ export default function MilkSales() {
               /> </div> </div>
         )}
 
-        <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden"> <div className="overflow-x-auto"> <table className="w-full text-left border-collapse"><thead><tr className="bg-slate-50 border-b border-slate-200 text-slate-650 text-xs uppercase tracking-wider"><th className="px-3 py-3 font-semibold w-16">S.No.</th> <th className="px-3 py-3 font-semibold">Date</th> <th className="px-3 py-3 font-semibold font-sans">Sale Unit</th> <th className="px-3 py-3 font-semibold">Name / Party</th> <th className="px-3 py-3 font-semibold">Deducted Volume (L)</th> <th className="px-3 py-3 font-semibold">TS%</th> <th className="px-3 py-3 font-semibold">Total TS</th> <th className="px-3 py-3 font-semibold">Amount</th> <th className="px-3 py-3 font-semibold text-center">Action</th></tr></thead><tbody className="divide-y divide-slate-100">
+        <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden"> <div className="overflow-x-auto"> <table className="w-full text-left border-collapse"><thead><tr className="bg-slate-50 border-b border-slate-200 text-slate-650 text-xs uppercase tracking-wider"><th className="px-3 py-3 font-semibold w-16">S.No.</th> <th className="px-3 py-3 font-semibold">Date</th> <th className="px-3 py-3 font-semibold font-sans">Sale Unit</th> <th className="px-3 py-3 font-semibold">Name / Party</th> <th className="px-3 py-3 font-semibold">Volume (Kg/L)</th> <th className="px-3 py-3 font-semibold">TS%</th> <th className="px-3 py-3 font-semibold">Total TS</th> <th className="px-3 py-3 font-semibold">Amount</th> <th className="px-3 py-3 font-semibold text-center">Action</th></tr></thead><tbody className="divide-y divide-slate-100">
                 {(() => {
                   const filtered = getFilteredRecords();
 
@@ -1130,11 +1132,16 @@ export default function MilkSales() {
                         });
                       }}>
                         {record.partyName}
-                      </td> <td className="px-3 py-3 text-sm text-slate-700 font-semibold font-mono"> <div> <span>{record.vol.toFixed(2)} L</span>
-                          {record.soldUnit === 'Kg' && (
-                            <span className="block text-[10px] font-normal text-slate-450">
-                              ({record.soldQtyKg?.toFixed(2)} Kg originally)
-                            </span>
+                      </td> <td className="px-3 py-3 text-sm text-slate-700 font-semibold font-mono"> <div>
+                          {record.soldUnit === 'Kg' ? (
+                            <>
+                              <span>{record.vol.toFixed(2)} L</span>
+                              <span className="block text-[10px] font-normal text-slate-450">
+                                ({record.soldQtyKg ? record.soldQtyKg.toFixed(2) : (record.vol * 1.03).toFixed(2)} Kg orig.)
+                              </span>
+                            </>
+                          ) : (
+                            <span>{record.vol.toFixed(2)} L</span>
                           )}
                         </div> </td> <td className="px-3 py-3 text-sm text-slate-600 font-mono">{record.tsr.toFixed(2)}%</td> <td className="px-3 py-3 text-sm font-bold text-green-700 font-mono">{record.totalTs.toFixed(2)}</td> <td className="px-3 py-3 text-sm font-bold text-slate-800 font-mono">Rs. {record.amount.toFixed(2)}</td>
                       <td className="px-3 py-3 text-center">

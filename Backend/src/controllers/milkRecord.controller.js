@@ -131,8 +131,6 @@ const getMilkRecords = asyncHandler(async (req, res) => {
         date: e.date,
         type: 'Sale',
         partyName: e.customerName,
-        // Sale ke liye spoiled minus NAHI — sale amount wahi hai jo customer ko charge hua
-        // Spoiled loss already AccountRecord mein Expense ke tor pe record hai
         vol:    (e.milkLiter || 0),
         amount: (e.totalAmount || 0),
         fat,
@@ -144,6 +142,15 @@ const getMilkRecords = asyncHandler(async (req, res) => {
         pricePerLiter: e.rate || 0,
         advance: e.advanceAmount || 0,
         paid:    e.paymentReceived || 0,
+        soldUnit:   e.milkUnit === 'Kg' ? 'Kg' : (e.notes && e.notes.includes('Milk Sale (Kg)') ? 'Kg' : 'L'),
+        soldQtyKg:  (() => {
+          // notes mein actual Kg value stored hai: "Milk Sale (Kg) - X Kg"
+          if (e.notes) {
+            const m = e.notes.match(/Milk Sale \(Kg\)\s*-\s*([\d.]+)\s*Kg/i);
+            if (m) return parseFloat(m[1]);
+          }
+          return null;
+        })(),
         routeId:   null,
         routeName: '',
       };
@@ -358,6 +365,7 @@ const _addToSaleLedger = async (record, userId) => {
     totalAmount: record.amount,
     advanceAmount: record.advance || 0,
     paymentReceived: record.paid || 0,
+    milkUnit: record.soldUnit === 'Kg' ? 'Kg' : 'Liters',
     notes: record.soldUnit === 'Kg' ? `Milk Sale (Kg) - ${record.soldQtyKg} Kg` : 'Milk Sale (Liters)',
     isManual: false,
     milkRecordId: record._id,
