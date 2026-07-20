@@ -159,18 +159,34 @@ export default function ExpenseEntry() {
   }, [accountRecords, search, catFilter, dateFilter]);
 
   const dailyData = useMemo(() => {
-    // Driver Advance entries bhi include karo — type Expense + category match
-    const ALL_EXPENSE_CATS = [...ADVANCE_CATEGORIES];
+    // Daily Expenses mein sirf ACTUAL expenses dikhao:
+    // - Regular categories (Salary, Food, etc.)
+    // - Driver Expense (actual trip kharch)
+    // EXCLUDE karo:
+    // - Driver Advance (yeh internal transfer hai, expense nahi)
+    // - Driver Advance Return (yeh wapas aaya paisa hai)
     const recs = accountRecords.filter(r =>
       r.date === dailyDate &&
-      (r.type === 'Expense' || ALL_EXPENSE_CATS.includes(r.category || ''))
+      r.type === 'Expense' &&
+      r.category !== 'Driver Advance' &&
+      r.category !== 'Driver Advance Return' &&
+      r.amount > 0  // negative amounts (returns) bhi exclude
     );
-    const total = recs.reduce((s,r) => s+r.amount, 0);
-    const byMethod = recs.reduce((acc, r) => { acc[r.method] = (acc[r.method]||0)+r.amount; return acc; }, {} as Record<string,number>);
+    const total = recs.reduce((s, r) => s + r.amount, 0);
+    const byMethod = recs.reduce((acc, r) => {
+      const key = r.method || 'Cash';
+      acc[key] = (acc[key] || 0) + r.amount;
+      return acc;
+    }, {} as Record<string, number>);
     return { recs, total, byMethod };
   }, [accountRecords, dailyDate]);
 
-  const totalExpense = useMemo(() => accountRecords.filter(r=>r.type==='Expense').reduce((s,r)=>s+r.amount,0), [accountRecords]);
+  const totalExpense = useMemo(() => accountRecords.filter(r =>
+    r.type === 'Expense' &&
+    r.category !== 'Driver Advance' &&
+    r.category !== 'Driver Advance Return' &&
+    r.amount > 0
+  ).reduce((s,r) => s + r.amount, 0), [accountRecords]);
   const totalIncome  = useMemo(() => accountRecords.filter(r=>r.type==='Income').reduce((s,r)=>s+r.amount,0),  [accountRecords]);
 
   return (
@@ -267,7 +283,10 @@ export default function ExpenseEntry() {
                     }
                   </div> </div> </div> <div className="table-wrapper"> <div className="table-scroll"> <table className="data-table"><thead><tr><th>Category</th><th>From</th><th>To</th><th>Method</th><th>Notes</th><th className="text-right">Amount</th>{(user?.role==='Admin'||user?.role==='Accountant')&&<th>Del</th>}</tr></thead><tbody>
                       {dailyData.recs.length === 0 ? (<tr><td colSpan={(user?.role==='Admin'||user?.role==='Accountant')?7:6} className="py-10 text-center text-[var(--text-muted)]">No expenses on this date.</td></tr>
-                      ) : dailyData.recs.map(r => (<tr key={r.id}><td className="font-semibold text-xs">{r.category}{r.vehicleNumber&&<span className="block font-mono text-[10px] text-[var(--text-muted)]">{r.vehicleNumber}</span>}</td> <td className="text-xs text-[var(--text-secondary)]">{r.payer}</td> <td className="text-xs font-semibold">{r.payee}</td> <td className="text-xs font-mono text-[var(--text-muted)]">{r.method}</td> <td className="text-xs text-[var(--text-muted)] max-w-[120px] truncate">{r.note}</td> <td className="text-right font-black font-mono text-red-600 text-xs">Rs.{r.amount.toLocaleString()}</td>
+                      ) : dailyData.recs.map(r => (<tr key={r.id}><td className="font-semibold text-xs">{r.category}{r.vehicleNumber&&<span className="block font-mono text-[10px] text-[var(--text-muted)]">{r.vehicleNumber}</span>}</td> <td className="text-xs text-[var(--text-secondary)]">{r.payer}</td> <td className="text-xs font-semibold">{r.payee}</td> <td className="text-xs font-mono text-[var(--text-muted)]">{r.method}</td> <td className="text-xs text-[var(--text-muted)] max-w-[120px] truncate">{r.note}</td>
+                          <td className={`text-right font-black font-mono text-xs ${r.amount < 0 ? 'text-emerald-600' : r.category === 'Driver Advance' ? 'text-blue-600' : 'text-red-600'}`}>
+                            {r.amount < 0 ? `↩ Rs.${Math.abs(r.amount).toLocaleString()}` : `Rs.${r.amount.toLocaleString()}`}
+                          </td>
                           {(user?.role==='Admin'||user?.role==='Accountant')&&(
                             <td className="flex gap-1"><button onClick={()=>openEdit(r)}
                               className="w-7 h-7 rounded-lg flex items-center justify-center text-[var(--text-muted)] hover:bg-blue-50 hover:text-blue-600 transition-all" aria-label="Edit"> <Edit2 className="w-3.5 h-3.5"/></button><button onClick={()=>{ if(confirm('Delete?')) deleteAccountRecord(r.id); }}
