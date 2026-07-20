@@ -114,7 +114,6 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
 
   const syncFromBackend = React.useCallback(async () => {
     if (!isOnline()) return;
-    // FIX: Login screen ya logout ke baad token nahi hota — request hi mat bhejo
     if (!getToken()) return;
     if (pendingSavesRef.current > 0) return;
     try {
@@ -122,10 +121,16 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
       if (result.success && Array.isArray(result.data)) {
         const backendUsers = result.data.map(toFrontend);
         setUsers(prev => {
-          const localOnly = prev.filter(u => u.id.startsWith('local_'));
+          // local_ prefix wale users jo backend mein already aa gaye hain unhe replace karo
+          // (fullName match se detect karo — username se nahi kyunke local auto-generated hota hai)
+          const backendNames = new Set(backendUsers.map((u: User) => u.fullName.toLowerCase().trim()));
+          const localOnly = prev.filter(u =>
+            u.id.startsWith('local_') &&
+            !backendNames.has(u.fullName.toLowerCase().trim()) // backend mein nahi hai abhi bhi
+          );
           const merged = [
             ...backendUsers,
-            ...localOnly.filter(lu => !backendUsers.some((bu: User) => bu.username === lu.username)),
+            ...localOnly,
           ];
           if (backendUsers.length > 0) {
             try { localStorage.setItem('dairy_users', JSON.stringify(merged)); } catch {}

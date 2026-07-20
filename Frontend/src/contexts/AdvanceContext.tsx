@@ -59,12 +59,16 @@ export function AdvanceProvider({ children }: { children: ReactNode }) {
     const handleAdvanceUpdated = (e: any) => {
       const advanceId = e.detail?.advanceId;
       if (!advanceId) return;
+      // pendingSavesRef guard — save in progress hone pe overwrite mat karo
+      if (pendingSavesRef.current > 0) return;
+      const secsSinceSave = (Date.now() - lastSaveTimeRef.current) / 1000;
+      if (secsSinceSave < 20) return;
       if (isOnline()) {
         advancesApi.getAll().then((res: any) => {
           if (res.success && Array.isArray(res.data)) {
             const updated = res.data.map((t: any) => ({
               id: t._id || t.id,
-              driverId: t.driverId?._id || t.driverId,
+              driverId: String(t.driverId?._id || t.driverId || ''),
               driverName: t.driverName || '',
               type: t.type, date: t.date, amount: t.amount,
               category: t.category, description: t.description,
@@ -121,29 +125,40 @@ export function AdvanceProvider({ children }: { children: ReactNode }) {
   // overwrite na kare (warna abhi-abhi add ki gayi entry "0" ho kar ghayab
   // ho jati thi jab tak backend confirm na kar de).
   const pendingSavesRef = React.useRef(0);
+  const lastSaveTimeRef = React.useRef<number>(0);
   const beginPendingSave = () => { pendingSavesRef.current++; };
   const endPendingSave = () => {
     pendingSavesRef.current = Math.max(0, pendingSavesRef.current - 1);
-    if (pendingSavesRef.current === 0) {
-      setTimeout(() => { syncFromBackend(); }, 500);
-    }
+    lastSaveTimeRef.current = Date.now();
+    // FIX: endPendingSave ke andar syncFromBackend BILKUL mat call karo.
+    // Backend (MongoDB Atlas) ko entry confirm karne mein 2-3 sec lag sakte hain.
+    // 500ms baad sync karne se backend ke paas abhi naya record nahi hota —
+    // woh purana (ya empty) data return karta hai aur naya record overwrite ho
+    // jaata hai. Real ID replacement addTransaction ke .then() mein already
+    // ho rahi hai — woh kaafi hai.
   };
 
   const syncFromBackend = async () => {
     if (!isOnline()) return;
-    // FIX: Login screen/logout ke waqt token nahi hota — request hi mat bhejo
     if (!getToken()) return;
     if (pendingSavesRef.current > 0) {
-      console.log('[AdvanceSync] Skipping background sync — save in progress');
+      console.log('[AdvanceSync] Skipping — save in progress');
+      return;
+    }
+    // FIX: Save ke baad 20 sec tak background sync rok do — warna backend pe
+    // naya record abhi properly save nahi hua hota aur poll purana data la
+    // deta hai jisse entry gayab dikhti hai.
+    const secsSinceSave = (Date.now() - lastSaveTimeRef.current) / 1000;
+    if (secsSinceSave < 20) {
+      console.log(`[AdvanceSync] Skipping — ${secsSinceSave.toFixed(1)}s since last save`);
       return;
     }
     try {
       const result: any = await advancesApi.getAll();
       if (result.success && Array.isArray(result.data)) {
-        // Backend ka data hi final source of truth — empty ho ya full
         const frontendData = result.data.map((t: any) => ({
           id: t._id || t.id,
-          driverId: t.driverId?._id || t.driverId,
+          driverId: String(t.driverId?._id || t.driverId || ''),
           driverName: t.driverName || '',
           type: t.type,
           date: t.date,
@@ -159,9 +174,6 @@ export function AdvanceProvider({ children }: { children: ReactNode }) {
         localStorage.setItem('dairy_advances', JSON.stringify(frontendData));
       }
     } catch (err) {
-      // FIX: Sirf genuinely offline hone pe hi purana cache dikhao.
-      // Pehle ye har error (server/auth glitch) pe purana data wapas dikha
-      // deta tha jisse newly-added transactions randomly gayab ho jaate the.
       if (!isOnline()) {
         try {
           const cached = localStorage.getItem('dairy_advances');
@@ -176,8 +188,13 @@ export function AdvanceProvider({ children }: { children: ReactNode }) {
 
   const addTransaction = (data: Omit<AdvanceTransaction, 'id' | 'createdAt'>) => {
     const tempId = Math.random().toString(36).substr(2, 9);
+    // driverId normalize — populated object hone pe sirf _id string lo
+    const normalizedDriverId = (data.driverId && typeof data.driverId === 'object')
+      ? (data.driverId as any)._id || (data.driverId as any).id
+      : data.driverId;
     const newTransaction: AdvanceTransaction = {
       ...data,
+      driverId: normalizedDriverId,
       id: tempId,
       createdAt: new Date().toISOString(),
     };
@@ -190,23 +207,26 @@ export function AdvanceProvider({ children }: { children: ReactNode }) {
     // Backend sync
     if (isOnline()) {
       beginPendingSave();
-      advancesApi.create(data).then((res: any) => {
-        // FIX: Backend ne real MongoDB _id diya — temp ID ko usse replace karo.
-        // Pehle ye kabhi nahi hota tha, isliye record hamesha fake local ID
-        // pe atka rehta tha aur agla background sync usay duplicate/purana
-        // samajh kar hata sakta tha.
-        if (res?.success && res.data?._id) {
+      advancesApi.create({ ...data, driverId: normalizedDriverId }).then((res: any) => {
+        if (res?.success && (res.data?._id || res.data?.id)) {
+          const realId = res.data._id || res.data.id;
+          // Normalize driverId in backend response too
+          const backendDriverId = res.data.driverId?._id || res.data.driverId || normalizedDriverId;
           setTransactions(prev => {
-            const updated = prev.map(t => t.id === tempId ? { ...t, id: res.data._id } : t);
+            const updated = prev.map(t =>
+              t.id === tempId
+                ? { ...t, id: realId, driverId: String(backendDriverId) }
+                : t
+            );
             localStorage.setItem('dairy_advances', JSON.stringify(updated));
             return updated;
           });
         }
       }).catch(() => {
-        addToQueue('/advances', 'POST', data, 'Add advance transaction');
+        addToQueue('/advances', 'POST', { ...data, driverId: normalizedDriverId }, 'Add advance transaction');
       }).finally(() => { endPendingSave(); });
     } else {
-      addToQueue('/advances', 'POST', data, 'Add advance transaction');
+      addToQueue('/advances', 'POST', { ...data, driverId: normalizedDriverId }, 'Add advance transaction');
     }
 
     // Automatically file to account ledger — advanceId link karo taake edit/delete sync ho sake
@@ -317,7 +337,7 @@ export function AdvanceProvider({ children }: { children: ReactNode }) {
   };
 
   const getDriverBalance = (driverId: string, openingBalance = 0) => {
-    const driverTx = transactions.filter(t => t.driverId === driverId);
+    const driverTx = transactions.filter(t => String(t.driverId) === String(driverId));
     let totalAdvance = 0;
     let totalExpense = 0;
     let totalIncome = 0;

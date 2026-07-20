@@ -21,11 +21,12 @@ export const downloadTransactionsPDF = (
   const usableWidth = pageWidth - margin * 2;
 
   // Header
-  doc.setFontSize(14);
+  doc.setFontSize(13);
   doc.setFont('helvetica', 'bold');
-  doc.text(title, margin, 14);
-  doc.setFontSize(8);
+  doc.text('Cheema Milk Collection & Commission Agent', margin, 11);
+  doc.setFontSize(7);
   doc.setFont('helvetica', 'normal');
+  doc.text(title, margin, 16);
   doc.text(`Generated: ${new Date().toLocaleDateString('en-PK')}`, margin, 20);
 
   // Column widths — equal distribution across usable width

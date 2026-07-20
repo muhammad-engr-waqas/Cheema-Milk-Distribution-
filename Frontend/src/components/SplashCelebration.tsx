@@ -77,7 +77,7 @@ export default function SplashCelebration({ onComplete }: SplashCelebrationProps
             transition={{ duration: 0.6, delay: 0.5, ease: 'easeOut' }}
             className="text-xs sm:text-sm font-bold uppercase tracking-[0.25em] text-blue-400 font-mono"
           >
-            Distribution & Collection
+            Collection &amp; Commission Agent
           </motion.p> </div>
 
         {/* Bottom Loading Progress Meter */}

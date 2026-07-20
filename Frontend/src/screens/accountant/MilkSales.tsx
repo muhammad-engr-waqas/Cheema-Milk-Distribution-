@@ -197,12 +197,13 @@ export default function MilkSales() {
     const usableWidth = pageWidth - margin * 2;
 
     // Header Section
-    doc.setFontSize(14);
+    doc.setFontSize(13);
     doc.setFont("helvetica", "bold");
-    doc.text("Milk Sales Statement", margin, 12);
+    doc.text("Cheema Milk Collection & Commission Agent", margin, 11);
 
     doc.setFontSize(8);
     doc.setFont("helvetica", "normal");
+    doc.text("Milk Sales Statement", margin, 17);
 
     // Sub-header details
     let dateRangeText = "All Records";

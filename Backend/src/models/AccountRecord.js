@@ -62,8 +62,7 @@ const accountRecordSchema = new mongoose.Schema(
       default: '',
     },
     advanceId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'AdvanceTransaction',
+      type: String,   // ObjectId se String — tempId bhi accept karo
       default: null,
     },
     createdBy: {

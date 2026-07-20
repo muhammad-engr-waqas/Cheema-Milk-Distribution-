@@ -34,6 +34,14 @@ export default function AccountantAdvances() {
     return users.filter(u => u.role === 'Driver');
   }, [users]);
 
+  // Toast notification — alert() ki jagah use karo (alert blocks JS execution
+  // aur pendingSavesRef ka guard break kar deta hai jisse entry gayab dikhti hai)
+  const [toast, setToast] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
+  const showToast = (text: string, type: 'success' | 'error' = 'success') => {
+    setToast({ text, type });
+    setTimeout(() => setToast(null), 3000);
+  };
+
   // Screen level states
   const [selectedDriverId, setSelectedDriverId] = useState<string | null>(null);
   
@@ -84,7 +92,7 @@ export default function AccountantAdvances() {
     
     // 1. Get raw transactions for this driver sorted oldest to newest
     const rawTx = transactions
-      .filter(t => t.driverId === activeDriver.id)
+      .filter(t => String(t.driverId) === String(activeDriver.id))
       .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime() || new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
 
     // 2. Chronological loop to compute running balance
@@ -196,7 +204,7 @@ export default function AccountantAdvances() {
     const docContent = `
       <html> <head> <title>${title}</title>
           ${styleHtml}
-        </head> <body onload="window.print()"> <div style="display: flex; justify-content: space-between; align-items: start; border-bottom: 3px solid #1e3a8a; padding-bottom: 12px; margin-bottom: 15px;"> <div> <h1 style="color: #1e3a8a; font-size: 20px; font-weight: 900; margin: 0; text-transform: uppercase; letter-spacing: -0.5px;">Bismillah Water Company</h1> <p style="font-size: 9px; color: #475569; margin: 2px 0 0 0; font-weight: bold; text-transform: uppercase; tracking: 1px;">Logistics & Fleet Driver Ledger Management</p> </div> <div style="text-align: right;"> <h2 style="font-size: 13px; font-weight: 800; color: #0f172a; margin: 0; letter-spacing: 0.5px;">LEDGER ACCOUNT STATEMENT</h2> <p style="font-size: 10px; color: #64748b; margin: 2px 0 0 0;">Statement Date: ${new Date().toLocaleDateString()}</p> </div> </div> <div class="meta-grid"> <div> <div class="meta-label">Driver Account</div> <div class="meta-value">${activeDriver.fullName}</div> <div style="font-size: 11px; color: #475569; margin-top: 2px;">Phone Contact: ${activeDriver.phone || 'N/A'} | CNIC No: ${activeDriver.cnic || 'N/A'}</div> </div> <div> <div class="meta-label">Ledger Summary Balance</div> <div class="meta-value" style="color: #1a56db; font-size: 15px;">Net Remaining Due: Rs. ${activeDriverBalanceObj.balance.toLocaleString()}</div> <div style="font-size: 11px; color: #475569; margin-top: 2px;">
+        </head> <body onload="window.print()"> <div style="display: flex; justify-content: space-between; align-items: start; border-bottom: 3px solid #1e3a8a; padding-bottom: 12px; margin-bottom: 15px;"> <div> <h1 style="color: #1e3a8a; font-size: 20px; font-weight: 900; margin: 0; text-transform: uppercase; letter-spacing: -0.5px;">Cheema Milk Collection & Commission Agent</h1> <p style="font-size: 9px; color: #475569; margin: 2px 0 0 0; font-weight: bold; text-transform: uppercase; tracking: 1px;">Driver Advance & Expense Ledger Management</p> </div> <div style="text-align: right;"> <h2 style="font-size: 13px; font-weight: 800; color: #0f172a; margin: 0; letter-spacing: 0.5px;">LEDGER ACCOUNT STATEMENT</h2> <p style="font-size: 10px; color: #64748b; margin: 2px 0 0 0;">Statement Date: ${new Date().toLocaleDateString()}</p> </div> </div> <div class="meta-grid"> <div> <div class="meta-label">Driver Account</div> <div class="meta-value">${activeDriver.fullName}</div> <div style="font-size: 11px; color: #475569; margin-top: 2px;">Phone Contact: ${activeDriver.phone || 'N/A'} | CNIC No: ${activeDriver.cnic || 'N/A'}</div> </div> <div> <div class="meta-label">Ledger Summary Balance</div> <div class="meta-value" style="color: #1a56db; font-size: 15px;">Net Remaining Due: Rs. ${activeDriverBalanceObj.balance.toLocaleString()}</div> <div style="font-size: 11px; color: #475569; margin-top: 2px;">
                 Total Disbursed: Rs. ${activeDriverBalanceObj.totalAdvance.toLocaleString()} | Logged Expenses: Rs. ${activeDriverBalanceObj.totalExpense.toLocaleString()}
               </div> </div> </div> <div style="margin-bottom: 15px; background: #fffbeb; border: 1px solid #fef3c7; padding: 8px 12px; border-radius: 6px; font-size: 11px; color: #92400e;"> <strong>Statement Date Target Period:</strong> ${dateRangeStr}
           </div> <table><thead><tr><th style="width: 15%;">Date</th> <th style="width: 45%;">Notes & Settlement Details</th> <th style="width: 20%;">Adjustment Type</th> <th style="width: 10%; text-align: right;">Amount (PKR)</th> <th style="width: 10%; text-align: right;">Running Due Balance</th></tr></thead><tbody>
@@ -206,7 +214,7 @@ export default function AccountantAdvances() {
               Accountant Signature
             </div> <div style="width: 200px; border-top: 1px solid #cbd5e1; text-align: center; padding-top: 5px; color: #475569;">
               Driver Receipt Signature
-            </div> </div> <div class="footer"> <p>Computer-generated statement from Bismillah Water Company Logistics Ledger engine. No physical stamp required.</p> <p style="margin-top: 2px;">Report Generated: ${new Date().toLocaleString()}</p> </div> <div class="no-print" style="margin-top: 40px; text-align: center;"> <button onclick="window.print();" style="background-color: #1e3a8a; color: white; border: none; padding: 12px 30px; font-size: 13px; font-weight: bold; border-radius: 8px; cursor: pointer; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06); transition: all 0.2s;">
+            </div> </div> <div class="footer"> <p>Computer-generated statement from Cheema Milk Collection & Commission Agent Ledger engine. No physical stamp required.</p> <p style="margin-top: 2px;">Report Generated: ${new Date().toLocaleString()}</p> </div> <div class="no-print" style="margin-top: 40px; text-align: center;"> <button onclick="window.print();" style="background-color: #1e3a8a; color: white; border: none; padding: 12px 30px; font-size: 13px; font-weight: bold; border-radius: 8px; cursor: pointer; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06); transition: all 0.2s;">
               🖨 Click to Print / Save as PDF
             </button> </div> </body> </html>
     `;
@@ -219,7 +227,7 @@ export default function AccountantAdvances() {
   const handleDriverSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!driverForm.fullName || !driverForm.phone) {
-      alert('Please fill out Name and Phone fields.');
+      showToast('Please fill out Name and Phone fields.', 'error');
       return;
     }
 
@@ -233,7 +241,7 @@ export default function AccountantAdvances() {
         cnic: driverForm.cnic,
         openingBalance: opBalNum
       });
-      alert('Driver profile updated securely.');
+      showToast('Driver profile updated successfully.');
     } else {
       // Create mode
       const usernameGenerated = 'driver_' + driverForm.fullName.toLowerCase().replace(/\s+/g, '_');
@@ -246,7 +254,7 @@ export default function AccountantAdvances() {
         cnic: driverForm.cnic,
         openingBalance: opBalNum
       });
-      alert('New Driver register successful.');
+      showToast('New Driver registered successfully.');
     }
 
     // Reset state & close modal
@@ -275,13 +283,13 @@ export default function AccountantAdvances() {
 
   // Delete Driver action
   const handleDeleteDriverClick = (driver: User, e: React.MouseEvent) => {
-    e.stopPropagation(); // Avoid activating select driver
+    e.stopPropagation();
     if (confirm(`Are you sure you want to permanently delete Driver: ${driver.fullName}? All associated ledgers will remain unlinked.`)) {
       deleteUser(driver.id);
       if (selectedDriverId === driver.id) {
         setSelectedDriverId(null);
       }
-      alert('Driver removed from database.');
+      showToast('Driver removed from records.');
     }
   };
 
@@ -292,7 +300,7 @@ export default function AccountantAdvances() {
 
     const amountNum = Number(txForm.amount);
     if (!amountNum || amountNum <= 0) {
-      alert('Please enter a valid positive amount.');
+      showToast('Please enter a valid positive amount.', 'error');
       return;
     }
 
@@ -308,7 +316,7 @@ export default function AccountantAdvances() {
         bankAccount: txForm.bankAccount,
         returnedByName: txForm.returnedByName
       });
-      alert('Transaction record edited successfully.');
+      showToast('Transaction updated successfully.');
     } else {
       // Create transaction
       addTransaction({
@@ -323,7 +331,7 @@ export default function AccountantAdvances() {
         bankAccount: txForm.bankAccount,
         returnedByName: txForm.returnedByName
       });
-      alert('Transaction record added successfully.');
+      showToast('Entry saved successfully.');
     }
 
     // Reset states
@@ -361,7 +369,7 @@ export default function AccountantAdvances() {
   const handleStartDeleteTx = (tx: AdvanceTransaction) => {
     if (confirm(`Do you wish to delete this ${tx.type.toLowerCase()} record of Rs. ${tx.amount.toLocaleString()}?`)) {
       deleteTransaction(tx.id);
-      alert('Transaction deleted.');
+      showToast('Transaction deleted.');
     }
   };
 
@@ -380,6 +388,15 @@ export default function AccountantAdvances() {
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto px-1 pb-16">
+
+      {/* Toast Notification — alert() ki jagah use karo */}
+      {toast && (
+        <div className={`fixed top-5 right-5 z-[9999] px-5 py-3 rounded-xl shadow-lg text-white text-sm font-semibold transition-all ${
+          toast.type === 'success' ? 'bg-emerald-600' : 'bg-red-600'
+        }`}>
+          {toast.type === 'success' ? '✓ ' : '✕ '}{toast.text}
+        </div>
+      )}
       
       {/* ----------------- DRIVERS DIRECTORY PAGE (NO DRIVER SELECTED) ----------------- */}
       {!selectedDriverId ? (

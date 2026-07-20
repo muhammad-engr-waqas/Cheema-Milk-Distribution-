@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">
+  <defs>
+    <radialGradient id="bg" cx="40%" cy="40%" r="60%">
+      <stop offset="0%" stop-color="#67e8f9"/>
+      <stop offset="50%" stop-color="#818cf8"/>
+      <stop offset="100%" stop-color="#e879f9"/>
+    </radialGradient>
+  </defs>
+  <!-- Circular background -->
+  <circle cx="50" cy="50" r="50" fill="url(#bg)"/>
+  <!-- Milk bottle outline (white) -->
+  <!-- Bottle cap -->
+  <rect x="36" y="12" width="28" height="10" rx="3" ry="3" fill="none" stroke="white" stroke-width="4" stroke-linejoin="round"/>
+  <!-- Cap label line -->
+  <rect x="40" y="15" width="20" height="4" rx="1" fill="white" opacity="0.5"/>
+  <!-- Bottle neck -->
+  <path d="M36 22 Q32 30 28 36" fill="none" stroke="white" stroke-width="4" stroke-linecap="round"/>
+  <path d="M64 22 Q68 30 72 36" fill="none" stroke="white" stroke-width="4" stroke-linecap="round"/>
+  <!-- Bottle body -->
+  <path d="M28 36 Q24 42 24 50 L24 78 Q24 84 30 84 L70 84 Q76 84 76 78 L76 50 Q76 42 72 36 Z" fill="none" stroke="white" stroke-width="4" stroke-linejoin="round"/>
+  <!-- Milk wave line inside bottle -->
+  <path d="M26 62 Q35 56 50 62 Q65 68 74 62" fill="none" stroke="white" stroke-width="3.5" stroke-linecap="round"/>
+</svg>

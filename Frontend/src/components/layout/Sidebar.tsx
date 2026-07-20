@@ -97,7 +97,7 @@ export default function Sidebar({ collapsed, onToggleCollapse, mobileOpen, onMob
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.2 }}
             className="flex flex-col overflow-hidden min-w-0"
-          > <span className="font-black text-[13px] tracking-tight text-white uppercase leading-none truncate">Cheema Milk</span> <span className="text-[9px] text-blue-400 font-bold uppercase tracking-widest mt-0.5 leading-none">Distribution & Collection</span> </motion.div>
+          > <span className="font-black text-[13px] tracking-tight text-white uppercase leading-none truncate">Cheema Milk</span> <span className="text-[9px] text-blue-400 font-bold uppercase tracking-widest mt-0.5 leading-none">Collection & Commission Agent</span> </motion.div>
         )}
       </div>
 

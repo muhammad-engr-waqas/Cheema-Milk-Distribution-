@@ -1544,7 +1544,7 @@ export default function PurchaseLedger() {
                          `-----------------------------%0A`;
     }
     
-    return `*CHEEMA DAIRY - LEDGER INVOICE RECEIPT*%0A` +
+    return `*CHEEMA MILK COLLECTION & COMMISSION AGENT - LEDGER RECEIPT*%0A` +
            `-----------------------------%0A` +
            `*Date*: ${purchase.date}%0A` +
            `*Client*: ${purchase.supplierName}%0A%0A` +
@@ -1560,11 +1560,11 @@ export default function PurchaseLedger() {
            `*CUMULATIVE REMAINING BALANCE*%0A` +
            `*Rs. ${fmtAmt(purchase.remainingBalance)}*%0A` +
            `-----------------------------%0A` +
-           `_Thank you for trading with Cheema Dairy. For details contact Accounts department._`;
+           `_Thank you for trading with Cheema Milk. For details contact Accounts department._`;
   };
 
   const getWhatsAppProfileText = (profile: SupplierProfile, balance: number) => {
-    return `*CHEEMA DAIRY*%0A` +
+    return `*CHEEMA MILK COLLECTION & COMMISSION AGENT*%0A` +
            `-----------------------------%0A` +
            `*Client Profile*: ${profile.supplierName}%0A` +
            `*Phone*: ${profile.phoneNumber}%0A%0A` +

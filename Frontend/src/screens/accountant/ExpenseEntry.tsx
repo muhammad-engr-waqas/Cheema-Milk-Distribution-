@@ -1,13 +1,17 @@
 import React, { useState, useMemo } from 'react';
-import { CreditCard, Search, Trash2, Calendar, DollarSign, Truck, TrendingUp, TrendingDown, X, Plus, Edit2, Save } from 'lucide-react';
+import { CreditCard, Search, Trash2, Calendar, DollarSign, Truck, TrendingUp, TrendingDown, X, Plus, Edit2, Save, Download } from 'lucide-react';
 import { useAccountContext } from '../../contexts/AccountContext';
 import { useVehicleContext } from '../../contexts/VehicleContext';
 import { fmtDate } from '../../utils/dateFormat';
 import { useAuth } from '../../contexts/AuthContext';
 import { PageShell } from '../../components/ui/PageShell';
 import { cn } from '../../lib/utils';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 const CATEGORIES = ['Salary','Truck Maintenance','Utilities','Food','Income','Staff Income','Other Expenses','Miscellaneous'];
+// Driver Advance categories — ye AccountContext se aati hain, ExpenseEntry mein bhi dikhni chahiye
+const ADVANCE_CATEGORIES = ['Driver Advance', 'Driver Expense', 'Driver Advance Return'];
 
 type Tab = 'history' | 'daily';
 
@@ -63,6 +67,66 @@ export default function ExpenseEntry() {
     setEditingRecord(null);
   }
 
+  // ── PDF Download ─────────────────────────────────────────────────────────
+  function downloadPDF(mode: 'history' | 'daily') {
+    const records = mode === 'daily' ? dailyData.recs : sortedRecords;
+    if (records.length === 0) { alert('No records to export.'); return; }
+
+    const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+    const pageW = doc.internal.pageSize.getWidth();
+    const margin = 10;
+
+    // Header
+    doc.setFontSize(14); doc.setFont('helvetica', 'bold');
+    doc.text('Cheema Milk Collection & Commission Agent', margin, 12);
+    doc.setFontSize(9); doc.setFont('helvetica', 'normal');
+    doc.text('Daily Expenses & Transaction Statement', margin, 18);
+    doc.text(`Generated: ${new Date().toLocaleString('en-PK')}`, margin, 23);
+
+    if (mode === 'daily') {
+      doc.text(`Date: ${fmtDate(dailyDate)}`, margin, 28);
+      doc.text(`Total Outflow: Rs. ${dailyData.total.toLocaleString()}`, margin, 33);
+    } else {
+      const filterText = catFilter !== 'All' ? `Category: ${catFilter}` : 'All Categories';
+      doc.text(`Filter: ${filterText}${dateFilter ? ` | Date: ${fmtDate(dateFilter)}` : ''}`, margin, 28);
+      doc.text(`Total Expense: Rs. ${totalExpense.toLocaleString()}  |  Total Income: Rs. ${totalIncome.toLocaleString()}  |  Net: Rs. ${(totalIncome - totalExpense).toLocaleString()}`, margin, 33);
+    }
+
+    const columns = ['#', 'Date', 'Category', 'From', 'To', 'Method', 'Notes', 'Amount (Rs.)'];
+    const rows = records.map((r: any, i: number) => [
+      i + 1,
+      fmtDate(r.date),
+      r.category + (r.vehicleNumber ? ` (${r.vehicleNumber})` : ''),
+      r.payer || '-',
+      r.payee || '-',
+      r.method || 'Cash',
+      r.note || '-',
+      `${r.type === 'Income' ? '+' : '-'} ${r.amount.toLocaleString()}`,
+    ]);
+
+    autoTable(doc, {
+      startY: 37,
+      head: [columns],
+      body: rows,
+      theme: 'grid',
+      styles: { fontSize: 7, cellPadding: 2 },
+      headStyles: { fillColor: [30, 58, 138], textColor: 255, fontStyle: 'bold', halign: 'center' },
+      columnStyles: {
+        0: { cellWidth: 8 },
+        1: { cellWidth: 22 },
+        2: { cellWidth: 30 },
+        3: { cellWidth: 30 },
+        4: { cellWidth: 30 },
+        5: { cellWidth: 22 },
+        7: { cellWidth: 25, halign: 'right', fontStyle: 'bold' },
+      },
+      margin: { left: margin, right: margin },
+    });
+
+    const dateTag = mode === 'daily' ? dailyDate : new Date().toISOString().split('T')[0];
+    doc.save(`Daily_Expenses_${dateTag}.pdf`);
+  }
+
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!form.category || !form.amount || !form.payer || !form.payee) {
@@ -95,7 +159,12 @@ export default function ExpenseEntry() {
   }, [accountRecords, search, catFilter, dateFilter]);
 
   const dailyData = useMemo(() => {
-    const recs = accountRecords.filter(r => r.date === dailyDate && r.type === 'Expense');
+    // Driver Advance entries bhi include karo — type Expense + category match
+    const ALL_EXPENSE_CATS = [...ADVANCE_CATEGORIES];
+    const recs = accountRecords.filter(r =>
+      r.date === dailyDate &&
+      (r.type === 'Expense' || ALL_EXPENSE_CATS.includes(r.category || ''))
+    );
     const total = recs.reduce((s,r) => s+r.amount, 0);
     const byMethod = recs.reduce((acc, r) => { acc[r.method] = (acc[r.method]||0)+r.amount; return acc; }, {} as Record<string,number>);
     return { recs, total, byMethod };
@@ -148,11 +217,25 @@ export default function ExpenseEntry() {
             ))}
           </div>
 
+          {/* Download PDF button */}
+          <div className="flex justify-end">
+            <button
+              onClick={() => downloadPDF(tab)}
+              className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow-sm transition-all"
+            >
+              <Download className="w-3.5 h-3.5" />
+              Download PDF
+            </button>
+          </div>
+
           {tab === 'history' ? (
             <>
               {/* Filters */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5"> <div className="relative"> <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[var(--text-muted)]" /> <input type="search" placeholder="Search payee…" value={search} onChange={e=>setSearch(e.target.value)} className="form-input form-input-sm pl-8" /> </div> <select value={catFilter} onChange={e=>setCatFilter(e.target.value)} className="form-input form-input-sm"> <option value="All">All Categories</option>
                   {CATEGORIES.map(c=><option key={c}>{c}</option>)}
+                  <optgroup label="── Driver Advances ──">
+                    {ADVANCE_CATEGORIES.map(c=><option key={c} value={c}>{c}</option>)}
+                  </optgroup>
                 </select> <input type="date" value={dateFilter} onChange={e=>setDateFilter(e.target.value)} className="form-input form-input-sm" /> </div> <p className="text-xs text-[var(--text-muted)]">{sortedRecords.length} record{sortedRecords.length!==1?'s':''} found</p> <div className="table-wrapper"> <div className="table-scroll"> <table className="data-table"><thead><tr><th>#</th><th>Date</th><th>Category</th> <th>From</th><th>To</th><th>Method</th> <th className="text-right">Amount</th>
                         {(user?.role==='Admin'||user?.role==='Accountant') && <th>Del</th>}</tr></thead><tbody>
                       {sortedRecords.length === 0 ? (<tr><td colSpan={(user?.role==='Admin'||user?.role==='Accountant')?8:7} className="py-10 text-center text-[var(--text-muted)]">No records match your filters.</td></tr>

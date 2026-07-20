@@ -258,7 +258,7 @@ export default function Login() {
 
           <div style={{ zIndex: 1, textAlign: 'center' }}>
             <p className="left-brand-name">Cheema Milk</p>
-            <p className="left-brand-sub">Distribution &amp; Collection</p>
+            <p className="left-brand-sub">Collection &amp; Commission Agent</p>
           </div>
 
 
@@ -282,7 +282,7 @@ export default function Login() {
               <div>
                 <p style={{ fontWeight: 900, fontSize: '0.9375rem', color: '#0f172a', lineHeight: 1 }}>Cheema Milk</p>
                 <p style={{ fontSize: '0.5625rem', color: '#3b82f6', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.15em', marginTop: '0.2rem' }}>
-                  Distribution &amp; Collection
+                  Collection &amp; Commission Agent
                 </p>
               </div>
             </div>

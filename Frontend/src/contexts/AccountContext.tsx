@@ -53,14 +53,8 @@ const toFrontend = (r: any): AccountRecord => ({
 
 export function AccountProvider({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
-  // FIX: Backend ka /api/accounts route sirf Admin/Accountant ke liye hai
-  // (authorize('Admin', 'Accountant')). Pehle ye context har role (MilkTester,
-  // Driver) ke liye bhi har 15 second baad sync karne ki koshish karta tha,
-  // jisse console mein baar baar 403 (Forbidden) aata tha. Ab sirf un roles
-  // ke liye sync hoga jinke paas actually access hai.
   const canAccessAccounts = user?.role === 'Admin' || user?.role === 'Accountant';
   const [accountRecords, setAccountRecords] = useState<AccountRecord[]>(() => {
-    // Instantly localStorage se load karo — page switch pe delay nahi hoga
     try {
       const cached = localStorage.getItem('dairy_account_records');
       if (cached) {
@@ -77,56 +71,56 @@ export function AccountProvider({ children }: { children: React.ReactNode }) {
     return () => window.removeEventListener('dairy-reset', handleReset);
   }, []);
 
-  useEffect(() => {
-    const handleOnline = () => syncFromBackend();
-    const handleLogin = () => syncFromBackend();
-    const handleVisibility = () => syncFromBackend();
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('dairy-user-login', handleLogin);
-    window.addEventListener('dairy-visibility-sync', handleVisibility);
-    if (isOnline()) syncFromBackend();
-
-    const pollInterval = setInterval(() => {
-      if (isOnline()) syncFromBackend();
-    }, 15000);
-
-    return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('dairy-user-login', handleLogin);
-      window.removeEventListener('dairy-visibility-sync', handleVisibility);
-      clearInterval(pollInterval);
-    };
-  }, []);
-
-  // FIX: Same systemic race-condition fix jo baaki contexts mein hai — jab tak
-  // koi naya account record backend ko save ho raha hai, background poll usay
-  // overwrite na kare.
   const pendingSavesRef = React.useRef(0);
+  const lastSaveTimeRef = React.useRef<number>(0);
+  const canAccessRef = React.useRef(canAccessAccounts);
+  // canAccessAccounts user state se aata hai — ref mein rakhte hain
+  // taake syncFromBackend mein stale closure na ho
+  React.useEffect(() => { canAccessRef.current = canAccessAccounts; }, [canAccessAccounts]);
+
   const beginPendingSave = () => { pendingSavesRef.current++; };
   const endPendingSave = () => {
     pendingSavesRef.current = Math.max(0, pendingSavesRef.current - 1);
-    if (pendingSavesRef.current === 0) {
-      setTimeout(() => { syncFromBackend(); }, 500);
-    }
+    lastSaveTimeRef.current = Date.now();
   };
 
-  const syncFromBackend = async () => {
-    if (!canAccessAccounts) return;
+  // syncFromBackend ko ref mein rakho — stale closure se bacho
+  // (useEffect ke pollInterval mein purani value bind hoti thi)
+  const syncFromBackendRef = React.useRef<() => Promise<void>>(async () => {});
+
+  const syncFromBackend = React.useCallback(async () => {
+    if (!canAccessRef.current) return;
     if (!isOnline()) return;
     if (!getToken()) return;
     if (pendingSavesRef.current > 0) return;
+    // Save ke baad 20 sec tak sync mat karo
+    const secsSinceSave = (Date.now() - lastSaveTimeRef.current) / 1000;
+    if (secsSinceSave < 20) return;
     try {
       const result: any = await accountsApi.getAll();
       if (result.success && Array.isArray(result.data)) {
-        // Backend ka data hi final source of truth — empty ho ya full
-        const frontendData = result.data.map(toFrontend);
-        setAccountRecords(frontendData);
-        localStorage.setItem('dairy_account_records', JSON.stringify(frontendData));
+        const backendData = result.data.map(toFrontend);
+        
+        setAccountRecords(prev => {
+          // FIX: Backend data se sirf woh records overwrite karo jo backend pe
+          // hain. Jo records sirf localStorage mein hain (backend pe save nahi
+          // hue — ACC- prefix ya advanceId wale) unhe merge karke rakho.
+          // Warna background sync backend ka chota dataset la ke sab kuch
+          // overwrite kar deta tha aur naye records gayab ho jaate the.
+          const backendIds = new Set(backendData.map((r: AccountRecord) => r.id));
+          
+          // Sirf woh local records rakho jo backend mein nahi hain
+          const localOnlyRecords = prev.filter(r =>
+            !backendIds.has(r.id) &&
+            (r.id.startsWith('ACC-') || !r.id.match(/^[a-f\d]{24}$/i))
+          );
+          
+          const merged = [...backendData, ...localOnlyRecords];
+          localStorage.setItem('dairy_account_records', JSON.stringify(merged));
+          return merged;
+        });
       }
     } catch (err) {
-      // FIX: Sirf genuinely offline hone pe hi purana cache dikhao.
-      // Pehle ye har error (server/auth glitch) pe purana data wapas dikha
-      // deta tha jisse newly-added records randomly gayab ho jaate the.
       if (!isOnline()) {
         try {
           const cached = localStorage.getItem('dairy_account_records');
@@ -137,7 +131,28 @@ export function AccountProvider({ children }: { children: React.ReactNode }) {
         } catch {}
       }
     }
-  };
+  }, []);
+
+  React.useEffect(() => { syncFromBackendRef.current = syncFromBackend; }, [syncFromBackend]);
+
+  useEffect(() => {
+    const call = () => syncFromBackendRef.current();
+    window.addEventListener('online', call);
+    window.addEventListener('dairy-user-login', call);
+    window.addEventListener('dairy-visibility-sync', call);
+    if (isOnline()) call();
+
+    const pollInterval = setInterval(() => {
+      if (isOnline()) call();
+    }, 15000);
+
+    return () => {
+      window.removeEventListener('online', call);
+      window.removeEventListener('dairy-user-login', call);
+      window.removeEventListener('dairy-visibility-sync', call);
+      clearInterval(pollInterval);
+    };
+  }, []);
 
   const addAccountRecord = (record: Omit<AccountRecord, 'id' | 'date' | 'time'> & { date?: string; time?: string }) => {
     const now = new Date();
@@ -156,12 +171,19 @@ export function AccountProvider({ children }: { children: React.ReactNode }) {
       beginPendingSave();
       accountsApi.create(payload).then((res: any) => {
         if (res.success && res.data?._id) {
-          setAccountRecords(prev => prev.map(r =>
-            r.id === newRecord.id ? { ...r, id: res.data._id } : r
-          ));
+          // tempId ko real MongoDB _id se replace karo
+          setAccountRecords(prev => {
+            const updated = prev.map(r =>
+              r.id === newRecord.id ? { ...r, id: res.data._id } : r
+            );
+            localStorage.setItem('dairy_account_records', JSON.stringify(updated));
+            return updated;
+          });
         }
-      }).catch(() => addToQueue('/accounts', 'POST', payload, 'Add account record'))
-        .finally(() => { endPendingSave(); });
+      }).catch((err: any) => {
+        console.error('[AccountRecord] Backend save failed:', err);
+        addToQueue('/accounts', 'POST', payload, 'Add account record');
+      }).finally(() => { endPendingSave(); });
     } else {
       addToQueue('/accounts', 'POST', payload, 'Add account record');
     }
