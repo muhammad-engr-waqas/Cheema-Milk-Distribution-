@@ -142,7 +142,7 @@ const translations = {
   }
 };
 
-// -- Static localStorage scanner (component ke bahar ó useState initializer mein use hoga) --
+// -- Static localStorage scanner (component ke bahar ÔøΩ useState initializer mein use hoga) --
 // Yeh page load par FORAN entries load karta hai taake balances turant correct dikhein
 const getAllPurchaseEntriesGlobalLS_static = (): any[] => {
   const all: any[] = [];
@@ -201,7 +201,7 @@ export default function PurchaseLedger() {
   
   // Custom states
   const [supplierProfiles, setSupplierProfiles] = useState<SupplierProfile[]>(() => {
-    // Instantly localStorage se load karo ó page switch pe delay nahi hoga
+    // Instantly localStorage se load karo ÔøΩ page switch pe delay nahi hoga
     try {
       const stored = localStorage.getItem('cheema_saved_suppliers');
       if (stored) {
@@ -278,7 +278,7 @@ export default function PurchaseLedger() {
   const locationStateProcessedRef = useRef(false);
   const lastLocationStateRef = useRef(location.state);
   useEffect(() => {
-    // Naya location.state aaya ó reset karo
+    // Naya location.state aaya ÔøΩ reset karo
     if (location.state !== lastLocationStateRef.current) {
       lastLocationStateRef.current = location.state;
       locationStateProcessedRef.current = false;
@@ -292,7 +292,7 @@ export default function PurchaseLedger() {
       const pName = location.state.preselectProfileName;
       const profile = supplierProfiles.find(p => p.supplierName.toLowerCase() === pName.toLowerCase());
       if (profile) {
-        // Pehle hi mark karo ke process ho gaya ó dobara nahi chalega
+        // Pehle hi mark karo ke process ho gaya ÔøΩ dobara nahi chalega
         locationStateProcessedRef.current = true;
 
         if (location.state.openEntryModal) {
@@ -413,7 +413,7 @@ export default function PurchaseLedger() {
   const [addOpeningBalance, setAddOpeningBalance] = useState<string>('');
   const [addDriverId, setAddDriverId] = useState<string>('DIRECT');
   const [resetCount, setResetCount] = useState<number>(0);
-  // Draft badge refresh ó sirf status badges ke liye, loadData() trigger nahi karta
+  // Draft badge refresh ÔøΩ sirf status badges ke liye, loadData() trigger nahi karta
   const [draftBadgeTick, setDraftBadgeTick] = useState<number>(0);
 
   // Load drafts from backend when selectedDate changes
@@ -427,7 +427,7 @@ export default function PurchaseLedger() {
               const draftKey = `cheema_purchase_draft_${selectedDate}_${draft.supplierId}`;
               localStorage.setItem(draftKey, JSON.stringify(draft.draftData));
             });
-            // Force status badge updates ó loadData() trigger mat karo
+            // Force status badge updates ÔøΩ loadData() trigger mat karo
             setDraftBadgeTick(prev => prev + 1);
           }
         })
@@ -494,15 +494,15 @@ export default function PurchaseLedger() {
     }
   }, [spoiledLiters, spoiledRate, spoiledFat, spoiledLr, entryIsSpoiled]);
 
-  // FIX: In-flight backend saves ki count ó jab tak koi save chal raha hai,
+  // FIX: In-flight backend saves ki count ÔøΩ jab tak koi save chal raha hai,
   // periodic refresh (neeche) usko overwrite nahi karega.
   const pendingSyncRef = useRef(0);
 
   const [allPurchaseEntries, setAllPurchaseEntries] = useState<PurchaseEntry[]>(() => {
-    // Cache se FORAN load karo ó page open hote hi balances correct dikhein
+    // Cache se FORAN load karo ÔøΩ page open hote hi balances correct dikhein
     return getAllPurchaseEntriesGlobalLS_static();
   });
-  // Cache se instant load karo ó page switch pe loading nahi dikhegi
+  // Cache se instant load karo ÔøΩ page switch pe loading nahi dikhegi
   const [loadingEntries, setLoadingEntries] = useState<boolean>(() => {
     try {
       const stored = localStorage.getItem('cheema_saved_suppliers');
@@ -559,7 +559,7 @@ export default function PurchaseLedger() {
             }));
             // FIX: Agar koi naya profile abhi locally `cust-` id ke saath
             // pending sync mein hai (backend ko abhi tak nahi bheja gaya),
-            // to use backend data se overwrite mat karo ó merge karo.
+            // to use backend data se overwrite mat karo ÔøΩ merge karo.
             setSupplierProfiles(prev => {
               const pendingLocal = prev.filter(p => p.id.startsWith('cust-'));
               const backendNames = new Set(mapped.map((p: any) => p.supplierName.toLowerCase()));
@@ -632,12 +632,12 @@ export default function PurchaseLedger() {
 
     const loadData = async () => {
       // FIX: Loading spinner sirf tab dikhao jab profiles abhi loaded nahi hain.
-      // Dobara fetch (resetCount se trigger) pe loading=true mat karo ó warna
+      // Dobara fetch (resetCount se trigger) pe loading=true mat karo ÔøΩ warna
       // naya banaya hua profile momentarily list se ghayab ho jaata tha.
       if (supplierProfiles.length === 0) setLoadingEntries(true);
       // FIX: Pehle ye dono calls ek ke baad ek (sequential await) chalti thi,
       // jis se page load time do guna ho jata tha (har call ka apna network
-      // round-trip). Ab dono ek saath (parallel) chalti hain ó jo "data 2-3
+      // round-trip). Ab dono ek saath (parallel) chalti hain ÔøΩ jo "data 2-3
       // second late aata hai" wali shikayat ka bara sabab tha.
       await Promise.allSettled([loadSuppliers(), loadPurchaseEntries()]);
       setLoadingEntries(false);
@@ -650,7 +650,7 @@ export default function PurchaseLedger() {
     const handleReset = () => {
       setResetCount(prev => prev + 1);
     };
-    // dairy-suppliers-updated: Backend ne real _id assign kiya ó sirf localStorage
+    // dairy-suppliers-updated: Backend ne real _id assign kiya ÔøΩ sirf localStorage
     // se profiles refresh karo, poora loadData() mat chalao (jo loading flicker banata tha)
     const handleSuppliersUpdated = () => {
       try {
@@ -663,7 +663,7 @@ export default function PurchaseLedger() {
     };
     window.addEventListener('dairy-reset', handleReset);
     window.addEventListener('dairy-suppliers-updated', handleSuppliersUpdated);
-    // dairy-purchase-saved aur dairy-sale-saved pe resetCount mat badhao ó
+    // dairy-purchase-saved aur dairy-sale-saved pe resetCount mat badhao ÔøΩ
     // handleSavePurchaseEntry directly allPurchaseEntries state update karta hai.
     // resetCount badhane se backend fetch hota hai jo race condition banata hai
     // (backend pe entry pohonchne se pehle stale data aata hai aur optimistic update overwrite hoti hai).
@@ -899,7 +899,7 @@ export default function PurchaseLedger() {
     localStorage.setItem(defaultProfilesKey, JSON.stringify(updated));
     setSupplierProfiles(updated);
 
-    // Backend sync ó sirf naya profile bhejo (poora array nahi)
+    // Backend sync ÔøΩ sirf naya profile bhejo (poora array nahi)
     // Backend se real MongoDB _id milne pe localStorage aur state turant update karo
     if (isOnline()) {
       const sanitizedProfile = {
@@ -1268,9 +1268,9 @@ export default function PurchaseLedger() {
     const prevBalance = getSupplierCurrentBalance(activeProfileForEntry);
     const calculatedRemaining = prevBalance - actualMilkAddedToBalance + advanceValue + cashValue;
 
-    // NOTE: addRecords call hata diya ó woh milkRecordsApi.createBulk call karta tha
+    // NOTE: addRecords call hata diya ÔøΩ woh milkRecordsApi.createBulk call karta tha
     // jo MilkRecord + PurchaseLedger dono mein entry banata tha.
-    // syncPurchaseEntryToBackend already PurchaseLedger mein save karta hai ó duplicate hoti thi.
+    // syncPurchaseEntryToBackend already PurchaseLedger mein save karta hai ÔøΩ duplicate hoti thi.
     // Dashboard stats ke liye syncFromBackend() rely karo jo 15s mein refresh hoti hai.
 
     // If updating, first remove any old copies from ALL ledger date arrays to prevent duplicates
@@ -1362,7 +1362,7 @@ export default function PurchaseLedger() {
 
     localStorage.setItem(key, JSON.stringify(entriesList));
 
-    // --- React state immediately update karo ó UI stale nahi rahegi -----------
+    // --- React state immediately update karo ÔøΩ UI stale nahi rahegi -----------
     setAllPurchaseEntries(prev => {
       const withoutOld = prev.filter(e => e.id !== entryId);
       return [...withoutOld, updatedEntry];
@@ -1426,10 +1426,10 @@ export default function PurchaseLedger() {
     const filtered = entries.filter(e => e.id !== purchaseId);
 
     localStorage.setItem(key, JSON.stringify(filtered));
-    // React state bhi update karo ó sirf localStorage pe nahi rehna
+    // React state bhi update karo ÔøΩ sirf localStorage pe nahi rehna
     setAllPurchaseEntries(prev => prev.filter(e => e.id !== purchaseId));
     removeRecord(purchaseId); // Sync with Dashboard stats
-    // Backend sync ó pendingSyncRef guard zaroori hai, warna 25s periodic
+    // Backend sync ÔøΩ pendingSyncRef guard zaroori hai, warna 25s periodic
     // refresh delete abhi backend pe complete hone se pehle hi purana data
     // wapas la sakta hai aur deleted entry dobara dikhne lagti hai.
     pendingSyncRef.current++;
@@ -1465,7 +1465,7 @@ export default function PurchaseLedger() {
     // Backend: actual DELETE call (not update)
     const isMongoId = /^[a-f\d]{24}$/i.test(profileId);
     if (isMongoId) {
-      // pendingSyncRef guard ó warna periodic refresh deleted supplier ko
+      // pendingSyncRef guard ÔøΩ warna periodic refresh deleted supplier ko
       // backend se dobara la sakta hai jab tak DELETE complete na ho
       pendingSyncRef.current++;
       const done = () => { pendingSyncRef.current = Math.max(0, pendingSyncRef.current - 1); };
@@ -1666,7 +1666,7 @@ export default function PurchaseLedger() {
                             >
                               {p.supplierName}
                             </h3> <span className="text-[10px] text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full mt-1 inline-block">
-                              ?? {p.location || "N/A"}
+                              üìç {p.location || "N/A"}
                             </span> </div>
                           
                           {/* Live Balance tag for supplier */}
@@ -1831,7 +1831,7 @@ export default function PurchaseLedger() {
                                 title="Click to view/edit entry details"
                               >
                                 {p.supplierName}
-                              </button> <span className="text-[10px] text-slate-400 font-medium">?? {p.location}</span> </td>
+                              </button> <span className="text-[10px] text-slate-400 font-medium">üìç {p.location}</span> </td>
 
                             {/* Status tag */}
                             <td className="px-4 py-3.5 text-center">
@@ -1857,17 +1857,17 @@ export default function PurchaseLedger() {
 
                             {/* Milk PKR Cost */}
                             <td className="px-4 py-3.5 font-mono text-slate-800 font-bold text-left text-xs">
-                              {entry ? `Rs. ${fmtAmt(entry.totalAmount)}` : 'ó'}
+                              {entry ? `Rs. ${fmtAmt(entry.totalAmount)}` : 'ÔøΩ'}
                             </td>
 
                             {/* Advance amount */}
                             <td className="px-4 py-3.5 font-mono text-indigo-700 text-left">
-                              {entry && entry.advanceAmount > 0 ? `+ Rs. ${fmtAmt(entry.advanceAmount)}` : 'ó'}
+                              {entry && entry.advanceAmount > 0 ? `+ Rs. ${fmtAmt(entry.advanceAmount)}` : 'ÔøΩ'}
                             </td>
 
                             {/* Cash Net Paid */}
                             <td className="px-4 py-3.5 font-mono text-emerald-700 text-left">
-                              {entry && entry.paymentReceived > 0 ? `+ Rs. ${fmtAmt(entry.paymentReceived)}` : 'ó'}
+                              {entry && entry.paymentReceived > 0 ? `+ Rs. ${fmtAmt(entry.paymentReceived)}` : 'ÔøΩ'}
                             </td>
 
                             {/* Remaining Balance calculated sequentially */}
@@ -2043,7 +2043,7 @@ export default function PurchaseLedger() {
       {/* RECORD SALE ENTRY / MODAL SHEET */}
       {showEntryModal && activeProfileForEntry && (() => {
         // Dynamic automatic loading of PREVIOUS remaining balance (strictly read-only)
-        // useMemo cached map se lo ó render pe heavy loop nahi chalega
+        // useMemo cached map se lo ÔøΩ render pe heavy loop nahi chalega
         const prevBal = supplierBalanceMap.get(activeProfileForEntry.id) ?? getSupplierCurrentBalance(activeProfileForEntry);
         
         const milkValue = Number(entryMilkPKR) || 0;
@@ -2073,12 +2073,12 @@ export default function PurchaseLedger() {
               
               {/* Modal Banner Header */}
               <div className="p-5.5 bg-gradient-to-r from-emerald-800 to-emerald-950 text-white flex justify-between items-center"> <div className="text-left"> <h3 className="font-black text-white text-base leading-tight">
-                    {labels.modalPurchaseTitle} ó {activeProfileForEntry.supplierName}
+                    {labels.modalPurchaseTitle} üìç {activeProfileForEntry.supplierName}
                   </h3> <p className="text-[10px] text-emerald-200 mt-0.5">Physical location: {activeProfileForEntry.location}</p> </div> <button 
                   onClick={() => setShowEntryModal(false)}
                   className="p-1 px-2.5 bg-white/10 hover:bg-white/20 text-white rounded-lg font-bold text-xs transition cursor-pointer"
                 >
-                  ? Close
+                  ‚úï Close
                 </button> </div>
 
               {/* Form entries details block */}
@@ -2101,11 +2101,11 @@ export default function PurchaseLedger() {
                   editingEntryId !== null && (
                     user?.role === 'Admin' ? (
                       <div className="bg-amber-50 border border-amber-200 text-amber-900 rounded-xl p-3 text-xs font-semibold flex items-center gap-2">
-                        ?? <strong>Admin Mode:</strong> Overwriting/editing this recorded transaction. Saving will update the existing entry for this date.
+                        ‚ö†Ô∏è <strong>Admin Mode:</strong> Overwriting/editing this recorded transaction. Saving will update the existing entry for this date.
                       </div>
                     ) : (
                       <div className="bg-rose-50 border border-rose-200 text-rose-900 rounded-xl p-3.5 text-xs font-semibold flex flex-col gap-1.5"> <div className="flex items-center gap-2 text-rose-800">
-                          ?? <strong>Transaction Locked:</strong> </div> <p className="font-medium text-[11px] text-rose-700 leading-relaxed">
+                          üîí <strong>Transaction Locked:</strong> </div> <p className="font-medium text-[11px] text-rose-700 leading-relaxed">
                           This purchase and payment entry is ALREADY saved/recorded under this account. Non-Admin roles cannot re-add or edit historical logs. Please contact an Admin to edit this transaction. Handlers can still share this record via WhatsApp below.
                         </p> </div>
                     )
@@ -2113,9 +2113,7 @@ export default function PurchaseLedger() {
                 )}
 
                 {/* Previous Remaining Outstanding Area. Read-only lockout */}
-                <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 text-left flex justify-between items-center"> <div className="w-7 text-left">
-                    ??
-                  </div> <div> <span className="text-[10px] text-slate-400 font-extrabold uppercase tracking-wide block font-sans">
+                <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 text-left flex justify-between items-center"> <div className="w-7 text-left">üìã</div> <div> <span className="text-[10px] text-slate-400 font-extrabold uppercase tracking-wide block font-sans">
                       {labels.previousBalance}
                     </span> <span className="text-md font-extrabold font-mono text-slate-700 block mt-0.5">
                       Rs. {fmtAmt(prevBal)}
@@ -2197,13 +2195,13 @@ export default function PurchaseLedger() {
                           <span className="font-mono font-bold text-emerald-800">
                             {entryFat !== undefined && entryLr !== undefined 
                               ? (((0.25 * (entryLr || 0)) + (0.22 * (entryFat || 0)) + 0.72) || 0).toFixed(2) + '%'
-                              : 'ó'
+                              : '‚Äî'
                             }
                           </span> </div> <div> <span className="text-slate-500 font-medium">Total TDS (TS %):</span>{' '}
                           <span className="font-mono font-bold text-indigo-900">
                             {entryFat !== undefined && entryLr !== undefined
                               ? (((entryFat || 0) + ((0.25 * (entryLr || 0)) + (0.22 * (entryFat || 0)) + 0.72)) || 0).toFixed(2) + '%'
-                              : 'ó'
+                              : '‚Äî'
                             }
                           </span> </div> <div className="col-span-2 pt-1 border-t border-emerald-100/40 flex justify-between items-center text-xs"> <span className="text-slate-600 font-bold">Total Milk Value:</span> <span className="text-emerald-800 font-bold font-mono text-emerald-700">
                             Rs. {fmtAmt(Number(entryMilkPKR || 0))}
@@ -2384,8 +2382,8 @@ export default function PurchaseLedger() {
                     Rs. {fmtAmt(Math.abs(calculatedRemaining))}
                   </div>
                   {calculatedRemaining !== 0 && (
-                    <div className={`text-[13px] font-black urdu-text tracking-wide ${calculatedRemaining > 0 ? "text-rose-700" : "text-emerald-700"}`}>
-                      {calculatedRemaining > 0 ? "?? ?? ???? ???? ???" : "?? ?? ???? ???? ???"}
+                    <div className={`text-[13px] font-black tracking-wide font-urdu ${calculatedRemaining > 0 ? "text-rose-700" : "text-emerald-700"}`}>
+                      {calculatedRemaining > 0 ? "ÿ¢Ÿæ ŸÜ€í Ÿæ€åÿ≥€í ŸÑ€åŸÜ€í €Å€å⁄∫" : "ÿ¢Ÿæ ŸÜ€í Ÿæ€åÿ≥€í ÿØ€åŸÜ€í €Å€å⁄∫"}
                     </div>
                   )}
                   <p className="text-[9px] text-emerald-700 italic block font-sans">
@@ -2510,7 +2508,7 @@ export default function PurchaseLedger() {
           return (
             <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-[300] p-4 animate-fade-in text-left"> <div className="bg-white rounded-2xl w-full max-w-5xl shadow-2xl h-[90vh] flex flex-col border border-slate-200 overflow-hidden">
                 {/* Header Section */}
-                <div className="p-6 border-b border-slate-200 flex justify-between items-center bg-slate-50/50"> <div className="text-left"> <h2 className="text-xl font-black text-slate-800 tracking-tight flex items-center gap-2"> <BarChart2 className="w-5 h-5 text-emerald-600" /> <span>{profile.supplierName} Ledger Sheet</span> </h2> <p className="text-xs text-slate-500 font-medium mt-0.5">?? {profile.location} ï CNIC: {profile.cnicNumber || 'N/A'}</p> </div> <button 
+                <div className="p-6 border-b border-slate-200 flex justify-between items-center bg-slate-50/50"> <div className="text-left"> <h2 className="text-xl font-black text-slate-800 tracking-tight flex items-center gap-2"> <BarChart2 className="w-5 h-5 text-emerald-600" /> <span>{profile.supplierName} Ledger Sheet</span> </h2> <p className="text-xs text-slate-500 font-medium mt-0.5">üìç {profile.location} ‚Äî CNIC: {profile.cnicNumber || 'N/A'}</p> </div> <button 
                     onClick={() => setShowDetailsModal(false)}
                     className="p-2 hover:bg-slate-200 rounded-full transition cursor-pointer"
                   > <X className="w-6 h-6 text-slate-400" /> </button> </div>
@@ -2610,17 +2608,17 @@ export default function PurchaseLedger() {
                                 className="hover:bg-slate-50/80 transition ease-in-out cursor-pointer group text-slate-700"
                                 title="Click to edit/view this entry"
                               > <td className="px-3 py-4 whitespace-nowrap"> <span className="font-bold text-slate-800 block group-hover:text-emerald-700 transition-colors">{fmtDate(item.date)}</span> <span className="text-[10px] text-slate-400 font-medium block">{item.time || 'Manual Entry'}</span> </td> <td className="px-3 py-4 text-center whitespace-nowrap font-black text-slate-700 font-mono">
-                                  {item.milkLiter ? `${item.milkLiter} ${item.milkUnit === 'Kg' ? 'Kg' : 'L'}` : 'ó'}
+                                  {item.milkLiter ? `${item.milkLiter} ${item.milkUnit === 'Kg' ? 'Kg' : 'L'}` : '‚Äî'}
                                 </td> <td className="px-2 py-4 text-center whitespace-nowrap font-bold text-slate-600 font-mono">
-                                  {item.fat != null ? `${Number(item.fat).toFixed(2)}%` : 'ó'}
+                                  {item.fat != null ? `${Number(item.fat).toFixed(2)}%` : '‚Äî'}
                                 </td> <td className="px-2 py-4 text-center whitespace-nowrap font-bold text-slate-600 font-mono">
-                                  {item.lr != null ? Number(item.lr) : 'ó'}
+                                  {item.lr != null ? Number(item.lr) : '‚Äî'}
                                 </td> <td className="px-2 py-4 text-center whitespace-nowrap font-bold text-slate-600 font-mono">
-                                  {item.snf != null ? `${Number(item.snf).toFixed(2)}%` : 'ó'}
+                                  {item.snf != null ? `${Number(item.snf).toFixed(2)}%` : '‚Äî'}
                                 </td> <td className="px-2 py-4 text-center whitespace-nowrap font-bold text-indigo-600 font-mono">
-                                  {item.fat != null && item.snf != null ? `${tsPercent.toFixed(2)}%` : 'ó'}
+                                  {item.fat != null && item.snf != null ? `${tsPercent.toFixed(2)}%` : '‚Äî'}
                                 </td> <td className="px-3 py-4 text-center whitespace-nowrap font-bold text-indigo-700 font-mono">
-                                  {item.totalTs != null ? Number(item.totalTs).toFixed(2) : 'ó'}
+                                  {item.totalTs != null ? Number(item.totalTs).toFixed(2) : '‚Äî'}
                                 </td> <td className="px-3 py-4 text-right whitespace-nowrap"> <span className="font-black text-slate-850 font-mono text-xs block">Rs. {fmtAmt(item.totalAmount)}</span>
                                   {item.rate > 0 && <span className="text-[9px] text-slate-400 block pb-0.5">@ Rs. {item.rate}</span>}
                                 </td> <td className="px-3 py-4 text-center whitespace-nowrap">
@@ -2628,25 +2626,25 @@ export default function PurchaseLedger() {
                                     <span className="px-2 py-0.5 bg-indigo-50 text-indigo-700 rounded-full font-bold text-[10px] border border-indigo-100">
                                       + Rs. {fmtAmt(item.advanceAmount)}
                                     </span>
-                                  ) : 'ó'}
+                                  ) : '‚Äî'}
                                 </td> <td className="px-3 py-4 text-center whitespace-nowrap">
                                   {item.paymentReceived > 0 ? (
                                     <span className="px-2 py-0.5 bg-teal-50 text-teal-700 rounded-full font-bold text-[10px] border border-teal-100">
                                       + Rs. {fmtAmt(item.paymentReceived)}
                                     </span>
-                                  ) : 'ó'}
+                                  ) : '‚Äî'}
                                 </td> <td className="px-3 py-4 text-center whitespace-nowrap">
                                   {item.discountAmount !== undefined && item.discountAmount > 0 ? (
                                     <span className="px-2 py-0.5 bg-amber-50 text-amber-700 rounded-full font-bold text-[10px] border border-amber-100">
                                       - Rs. {fmtAmt(item.discountAmount)}
                                     </span>
-                                  ) : 'ó'}
+                                  ) : '‚Äî'}
                                 </td> <td className="px-3 py-4 text-center whitespace-nowrap">
                                   {item.isSpoiled && (item.spoiledAmount || 0) > 0 ? (
-                                    <span className="px-2 py-0.5 bg-rose-50 text-rose-700 rounded-full font-bold text-[10px] border border-rose-100" title={`Spoiled Qty: ${item.spoiledLiters || 'ó'} L`}>
+                                    <span className="px-2 py-0.5 bg-rose-50 text-rose-700 rounded-full font-bold text-[10px] border border-rose-100" title={`Spoiled Qty: ${item.spoiledLiters || '‚Äî'} L`}>
                                       - Rs. {fmtAmt(item.spoiledAmount)}
                                     </span>
-                                  ) : 'ó'}
+                                  ) : '‚Äî'}
                                 </td> <td className="px-4 py-4 text-right whitespace-nowrap"> <span className={`font-black font-mono text-sm ${
                                     item.remainingBalanceState > 0 ? 'text-rose-700' : 'text-emerald-700'
                                   }`}>
@@ -2661,13 +2659,13 @@ export default function PurchaseLedger() {
                                         </span> </div>
                                     )}
                                     {item.isSpoiled && (item.spoiledAmount || 0) > 0 && (
-                                       <div className="flex flex-wrap gap-x-3 gap-y-1 items-center pt-0.5"> <span className="inline-block px-1.5 py-0.5 rounded bg-rose-100 text-rose-800 text-[9px] font-black uppercase"> Returned Spoilage</span> <span>Returned Spoiled Milk:</span> <span className="font-mono font-bold bg-white px-1.5 py-0.5 rounded border border-rose-100 text-rose-800">
+                                       <div className="flex flex-wrap gap-x-3 gap-y-1 items-center pt-0.5"> <span className="inline-block px-1.5 py-0.5 rounded bg-rose-100 text-rose-800 text-[9px] font-black uppercase"> ‚ö†Ô∏è Returned Spoilage</span> <span>Returned Spoiled Milk:</span> <span className="font-mono font-bold bg-white px-1.5 py-0.5 rounded border border-rose-100 text-rose-800">
                                            {item.spoiledLiters || '0'} {item.milkUnit || 'Liters'}
                                          </span>
                                          {item.spoiledRate != null && Number(item.spoiledRate) > 0 && (
                                            <span>@ <span className="font-mono font-bold">Rs. {item.spoiledRate}</span></span>
                                          )}
-                                         <span className="text-slate-300">|</span> <span>Fat: <span className="font-mono font-bold text-slate-800">{item.spoiledFat != null ? `${Number(item.spoiledFat).toFixed(2)}%` : 'ó'}</span></span> <span className="text-slate-300">|</span> <span>LR: <span className="font-mono font-bold text-slate-800">{item.spoiledLr != null ? Number(item.spoiledLr).toFixed(0) : 'ó'}</span></span> <span className="text-slate-300">|</span> <span>TS %: <span className="font-mono font-bold text-slate-800">{item.spoiledTs != null ? `${Number(item.spoiledTs).toFixed(2)}%` : 'ó'}</span></span> <span className="text-slate-300">|</span> <span>SNF %: <span className="font-mono font-bold text-slate-800">{item.spoiledSnf != null ? `${Number(item.spoiledSnf).toFixed(2)}%` : 'ó'}</span></span> <span className="ml-auto font-black text-rose-700 font-mono bg-rose-100/40 px-2 py-0.5 rounded border border-rose-200">
+                                         <span className="text-slate-300">|</span> <span>Fat: <span className="font-mono font-bold text-slate-800">{item.spoiledFat != null ? `${Number(item.spoiledFat).toFixed(2)}%` : '‚Äî'}</span></span> <span className="text-slate-300">|</span> <span>LR: <span className="font-mono font-bold text-slate-800">{item.spoiledLr != null ? Number(item.spoiledLr).toFixed(0) : '‚Äî'}</span></span> <span className="text-slate-300">|</span> <span>TS %: <span className="font-mono font-bold text-slate-800">{item.spoiledTs != null ? `${Number(item.spoiledTs).toFixed(2)}%` : '‚Äî'}</span></span> <span className="text-slate-300">|</span> <span>SNF %: <span className="font-mono font-bold text-slate-800">{item.spoiledSnf != null ? `${Number(item.spoiledSnf).toFixed(2)}%` : '‚Äî'}</span></span> <span className="ml-auto font-black text-rose-700 font-mono bg-rose-100/40 px-2 py-0.5 rounded border border-rose-200">
                                            Deducted Spoilage: Rs. {fmtAmt(item.spoiledAmount)}
                                          </span> </div>
                                      )}
@@ -2806,3 +2804,4 @@ export default function PurchaseLedger() {
     </div>
   );
 }
+

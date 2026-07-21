@@ -5,6 +5,14 @@
    Global CSS Variables + Utility Classes
    ============================================================ */
 
+/* Urdu script font utility */
+.font-urdu {
+  font-family: 'Noto Nastaliq Urdu', 'Noto Naskh Arabic', serif;
+  direction: rtl;
+  unicode-bidi: embed;
+  line-height: 1.8;
+}
+
 :root {
   /* Brand Colors */
   --brand-50:  #eff6ff;
