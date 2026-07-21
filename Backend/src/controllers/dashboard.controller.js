@@ -75,12 +75,14 @@ const getDashboardSummary = asyncHandler(async (req, res) => {
         },
       },
     ]),
-    // Today expenses from account records (ALL expenses including Driver Advance)
+    // Today expenses — Driver Advance aur Return EXCLUDE karo
     AccountRecord.aggregate([
       { 
         $match: { 
           date: today, 
-          type: 'Expense'
+          type: 'Expense',
+          category: { $nin: ['Driver Advance', 'Driver Advance Return', 'Driver Expense'] },
+          amount: { $gt: 0 }
         } 
       },
       { $group: { _id: null, total: { $sum: '$amount' } } }
@@ -165,21 +167,22 @@ const getPnLReport = asyncHandler(async (req, res) => {
       },
       { $sort: { _id: 1 } },
     ]),
-    // Expenses — ALL actual expenses (Driver Advance + Return bhi include)
+    // Expenses — Driver Advance aur Driver Advance Return EXCLUDE karo
+    // Sirf actual operational expenses count karo (Fuel, Food, Salary etc.)
     AccountRecord.aggregate([
       { 
         $match: { 
           date: { $gte: startDate, $lte: endDate }, 
-          type: 'Expense'
+          type: 'Expense',
+          category: { $nin: ['Driver Advance', 'Driver Advance Return', 'Driver Expense'] },
+          amount: { $gt: 0 }
         } 
       },
       { $group: { _id: '$date', total: { $sum: '$amount' } } },
       { $sort: { _id: 1 } }
     ]),
-    AccountRecord.aggregate([
-      { $match: { date: { $gte: startDate, $lte: endDate }, category: 'Driver Advance', type: 'Expense' } },
-      { $group: { _id: '$date', total: { $sum: '$amount' } } }
-    ]),
+    // Placeholder — unused, kept for array destructuring
+    Promise.resolve([]),
   ]);
 
   // Merge by date into a unified chart format

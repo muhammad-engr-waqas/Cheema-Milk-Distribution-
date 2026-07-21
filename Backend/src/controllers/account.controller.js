@@ -77,6 +77,8 @@ const getFinancialSummary = asyncHandler(async (req, res) => {
   if (req.query.startDate && req.query.endDate) {
     filter.date = { $gte: req.query.startDate, $lte: req.query.endDate };
   }
+  // Driver Advance aur Return exclude karo — yeh actual expense nahi
+  filter.category = { $nin: ['Driver Advance', 'Driver Advance Return', 'Driver Expense'] };
 
   const records = await AccountRecord.find(filter);
 
@@ -89,7 +91,6 @@ const getFinancialSummary = asyncHandler(async (req, res) => {
       totalIncome += amount;
     } else if (r.type === 'Expense') {
       if (amount < 0) {
-        // Negative expense = actually a return/credit
         totalExpense += 0;
         totalIncome += Math.abs(amount);
       } else {

@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { fmtDate } from '../../utils/dateFormat';
 import { 
@@ -144,7 +144,7 @@ const translations = {
   }
 };
 
-// ── Static localStorage scanner (component ke bahar — useState initializer mein use hoga) ──
+// -- Static localStorage scanner (component ke bahar � useState initializer mein use hoga) --
 const getAllSaleEntriesGlobalLS_static = (): any[] => {
   const all: any[] = [];
   try {
@@ -174,7 +174,7 @@ const getAllSaleEntriesGlobalLS_static = (): any[] => {
   return all;
 };
 
-// ── Amount Formatter ──────────────────────────────────────────────────────────
+// -- Amount Formatter ----------------------------------------------------------
 const fmtAmt = (val: number | undefined | null): string => {
   const n = Number(val) || 0;
   const rounded = Math.round(n);
@@ -200,7 +200,7 @@ export default function SaleLedger() {
   
   const location = useLocation();
   const navigate = useNavigate();
-  // FIX: Processed ref — modal ek baar se zyada auto-open nahi hoga
+  // FIX: Processed ref � modal ek baar se zyada auto-open nahi hoga
   const locationStateProcessedRef = useRef(false);
   const lastLocationStateRef = useRef(location.state);
   useEffect(() => {
@@ -222,7 +222,7 @@ export default function SaleLedger() {
   
   // Custom states
   const [customerProfiles, setCustomerProfiles] = useState<CustomerProfile[]>(() => {
-    // Instantly localStorage se load karo — page switch pe delay nahi hoga
+    // Instantly localStorage se load karo � page switch pe delay nahi hoga
     try {
       const stored = localStorage.getItem('cheema_saved_customers');
       if (stored) {
@@ -237,10 +237,10 @@ export default function SaleLedger() {
 
   // Daily Entry Form states
   const [showEntryModal, setShowEntryModal] = useState<boolean>(false);
-  // FIX: In-flight backend saves ki count — jab tak koi save chal raha hai,
+  // FIX: In-flight backend saves ki count � jab tak koi save chal raha hai,
   // periodic refresh (neeche) usko overwrite nahi karega.
   const pendingSyncRef = useRef(0);
-  // FIX: Last save ka timestamp — save ke baad 15 sec tak refresh block karo
+  // FIX: Last save ka timestamp � save ke baad 15 sec tak refresh block karo
   // taake newly saved entry backend mein properly save ho sake aur return aaye
   const lastSaveTimeRef = useRef<number>(0);
   // showEntryModal ka latest value ref mein rakho taake setInterval callback
@@ -319,7 +319,7 @@ export default function SaleLedger() {
       }
     }
 
-    // Sirf jo aapne khud add kiya — koi fake default nahi
+    // Sirf jo aapne khud add kiya � koi fake default nahi
     setCustomerProfiles(resolved);
   }, [resetCount]);
 
@@ -472,8 +472,8 @@ export default function SaleLedger() {
   };
 
   const [allSaleEntries, setAllSaleEntries] = useState<SaleEntry[]>([]);
-  // Empty start — backend se fresh data load hoga immediately
-  // Cache se instant load karo — page switch pe loading nahi dikhegi
+  // Empty start � backend se fresh data load hoga immediately
+  // Cache se instant load karo � page switch pe loading nahi dikhegi
   const [loadingEntries, setLoadingEntries] = useState<boolean>(() => {
     try {
       const stored = localStorage.getItem('cheema_saved_customers');
@@ -552,7 +552,7 @@ export default function SaleLedger() {
     };
 
     const loadSaleEntries = async () => {
-      // Global Sale Entries — Purchase Ledger jaisa simple approach
+      // Global Sale Entries � Purchase Ledger jaisa simple approach
       // Backend = single source of truth, koi merge/cleanup nahi
       try {
         if (isOnline()) {
@@ -605,12 +605,12 @@ export default function SaleLedger() {
 
     const loadData = async () => {
       // FIX: Loading spinner sirf tab dikhao jab profiles abhi loaded nahi hain.
-      // Dobara fetch (resetCount se trigger) pe loading=true mat karo — warna
+      // Dobara fetch (resetCount se trigger) pe loading=true mat karo � warna
       // naya banaya hua profile momentarily list se ghayab ho jaata tha.
       if (customerProfiles.length === 0) setLoadingEntries(true);
       // FIX: Pehle ye dono calls sequentially await hoti thi (do network
       // round-trips ek ke baad ek), jo page load time double kar deta tha.
-      // Ab parallel chalti hain — "data 2-3 second late aata hai" wali
+      // Ab parallel chalti hain � "data 2-3 second late aata hai" wali
       // shikayat ka bara sabab yehi tha.
       await Promise.allSettled([loadCustomers(), loadSaleEntries()]);
       setLoadingEntries(false);
@@ -639,13 +639,13 @@ export default function SaleLedger() {
     // full reload se race condition banta hai (backend se stale data aata hai)
 
     // MilkSales screen se sale save hone par SaleLedger ko fresh fetch karo
-    // (backend ne old entries replace kar di hain — updated data chahiye)
+    // (backend ne old entries replace kar di hain � updated data chahiye)
     const handleMilkSaleCommitted = () => {
       setResetCount(prev => prev + 1);
     };
     window.addEventListener('dairy-milk-sale-committed', handleMilkSaleCommitted);
 
-    // FIX: Jab user tab/window switch karke wapas aaye — fresh data lo
+    // FIX: Jab user tab/window switch karke wapas aaye � fresh data lo
     // Yeh doosre browser mein changes reflect karta hai (delete, add etc)
     const handleVisibilityChange = () => {
       const secsSinceSave = (Date.now() - lastSaveTimeRef.current) / 1000;
@@ -727,7 +727,7 @@ export default function SaleLedger() {
     return getCustomerBalanceBeforeDate(profile, '9999-12-31');
   };
 
-  // ── useMemo: Har customer ka balance ek baar compute karo ─────────────────
+  // -- useMemo: Har customer ka balance ek baar compute karo -----------------
   const customerBalanceMap = useMemo(() => {
     const map = new Map<string, number>();
     for (const p of customerProfiles) {
@@ -737,7 +737,7 @@ export default function SaleLedger() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [allSaleEntries, customerProfiles]);
 
-  // ── useMemo: selectedDate ke liye prevBalance map ─────────────────────────
+  // -- useMemo: selectedDate ke liye prevBalance map -------------------------
   const customerPrevBalanceMap = useMemo(() => {
     const map = new Map<string, number>();
     for (const p of customerProfiles) {
@@ -866,7 +866,7 @@ export default function SaleLedger() {
     localStorage.setItem(defaultProfilesKey, JSON.stringify(updated));
     setCustomerProfiles(updated);
 
-    // Backend sync — sirf naya profile bhejo (poora array nahi)
+    // Backend sync � sirf naya profile bhejo (poora array nahi)
     // Backend se real MongoDB _id milne pe localStorage aur state turant update karo
     if (isOnline()) {
       const sanitizedProfile = {
@@ -914,7 +914,7 @@ export default function SaleLedger() {
     setActiveTab('customers'); 
   };
 
-  // ── EDIT CUSTOMER PROFILE ─────────────────────────────────────────────────
+  // -- EDIT CUSTOMER PROFILE -------------------------------------------------
   const [editingCustomer, setEditingCustomer] = useState<CustomerProfile | null>(null);
   const [editCustName, setEditCustName] = useState('');
   const [editCustPhone, setEditCustPhone] = useState('');
@@ -1237,9 +1237,9 @@ export default function SaleLedger() {
       });
     }
 
-    // NOTE: addRecords call hata diya — woh milkRecordsApi.createBulk call karta tha
+    // NOTE: addRecords call hata diya � woh milkRecordsApi.createBulk call karta tha
     // jo MilkRecord + SaleLedger dono mein entry banata tha.
-    // syncSaleEntryToBackend already SaleLedger mein save karta hai — duplicate hoti thi.
+    // syncSaleEntryToBackend already SaleLedger mein save karta hai � duplicate hoti thi.
     // Dashboard stats ke liye syncFromBackend() rely karo jo 15s mein refresh hoti hai.
 
     const key = `cheema_sale_ledger_${entryDate}`;
@@ -1300,19 +1300,19 @@ export default function SaleLedger() {
 
     localStorage.setItem(key, JSON.stringify(entriesList));
 
-    // ── FIX: allSaleEntries state foran update karo ──
+    // -- FIX: allSaleEntries state foran update karo --
     // Bina is ke naya entry UI mein nazar nahi aata jab tak page reload na ho
     setAllSaleEntries(prev => {
       const withoutOld = prev.filter(e => e.id !== updatedEntry.id);
       return [...withoutOld, updatedEntry];
     });
 
-    // Backend sync — response se real MongoDB _id lo aur local entry update karo
+    // Backend sync � response se real MongoDB _id lo aur local entry update karo
     pendingSyncRef.current++;
-    lastSaveTimeRef.current = Date.now(); // Save time track karo — refresh block ke liye
+    lastSaveTimeRef.current = Date.now(); // Save time track karo � refresh block ke liye
     syncSaleEntryToBackend(updatedEntry as any)
       .then((res: any) => {
-        // Backend ne real _id diya — localStorage + state mein local ID replace karo
+        // Backend ne real _id diya � localStorage + state mein local ID replace karo
         const realId = res?.data?._id || res?._id;
         if (realId && realId !== updatedEntry.id) {
           const lsKey = `cheema_sale_ledger_${updatedEntry.date}`;
@@ -1371,7 +1371,7 @@ export default function SaleLedger() {
       ));
 
       // Backend: actual DELETE call (not update/sync)
-      // pendingSyncRef guard — warna periodic refresh deleted customer ko
+      // pendingSyncRef guard � warna periodic refresh deleted customer ko
       // backend se dobara la sakta hai jab tak DELETE complete na ho
       const isMongoId = /^[a-f\d]{24}$/i.test(profileId);
       if (isMongoId) {
@@ -1411,7 +1411,7 @@ export default function SaleLedger() {
     // Dashboard stats se hatao
     removeRecord(saleId);
 
-    // Backend: sirf EK call — ledger delete (jo MilkRecord bhi cascade delete karta hai)
+    // Backend: sirf EK call � ledger delete (jo MilkRecord bhi cascade delete karta hai)
     // removeRecord already milk-records/:id call karta hai agar valid MongoDB ID ho
     // Ledger entry alag delete karo (agar MongoDB ID hai)
     // pendingSyncRef guard zaroori hai, warna 25s periodic refresh delete
@@ -1450,8 +1450,8 @@ export default function SaleLedger() {
     filtered.forEach(item => {
       const start = running;
       const net = (Number(item.totalAmount) || 0) - (Number(item.discountAmount) || 0) - (Number(item.spoiledAmount) || 0);
-      // vehicleRent balance BADHATA hai — customer par extra charge hai (milk jaisi)
-      // advance aur cash payment balance GHATAATAY hain — customer ne diya
+      // vehicleRent balance BADHATA hai � customer par extra charge hai (milk jaisi)
+      // advance aur cash payment balance GHATAATAY hain � customer ne diya
       const end = Math.round((start + net + Number(item.vehicleRent || 0) - Number(item.advanceAmount) - Number(item.paymentReceived)) * 100) / 100;
       
       finalTimeline.push({
@@ -1479,7 +1479,7 @@ export default function SaleLedger() {
 
     let spoilageDetails = '';
     if (sale.isSpoiled && sale.spoiledAmount) {
-       spoilageDetails = `*âš  SPOILED MILK RETURNED*:%0A` +
+       spoilageDetails = `*⚠ SPOILED MILK RETURNED*:%0A` +
                          `- Qty: ${sale.spoiledLiters || '0'} ${sale.milkUnit || 'Liters'}%0A` +
                          `- Fat %: ${sale.spoiledFat || '0'}%%0A` +
                          `- LLR (Lal): ${sale.spoiledLr || '0'}%0A` +
@@ -1545,7 +1545,7 @@ export default function SaleLedger() {
           notice.type === 'success' 
             ? 'bg-emerald-50 border-emerald-200 text-emerald-800' 
             : 'bg-rose-50 border-rose-200 text-rose-800'
-        }`}> <div className="flex items-center space-x-2 "> <CheckCircle className="w-5 h-5" /> <span>{notice.text}</span> </div> <button onClick={() => setNotice(null)} className="text-slate-400 hover:text-slate-600 font-bold">✕</button> </div>
+        }`}> <div className="flex items-center space-x-2 "> <CheckCircle className="w-5 h-5" /> <span>{notice.text}</span> </div> <button onClick={() => setNotice(null)} className="text-slate-400 hover:text-slate-600 font-bold">?</button> </div>
       )}
 
       {/* Main Bottom Tabs Controller */}
@@ -1611,7 +1611,7 @@ export default function SaleLedger() {
                             >
                               {p.customerName}
                             </h3> <span className="text-[10px] text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full mt-1 inline-block">
-                              📍 {p.location || "N/A"}
+                              ?? {p.location || "N/A"}
                             </span> </div>
                           
                           {/* Live Balance tag for customer */}
@@ -1776,14 +1776,14 @@ export default function SaleLedger() {
                                 title="Click to view/edit entry details"
                               >
                                 {p.customerName}
-                              </button> <span className="text-[10px] text-slate-400 font-medium">📍 {p.location}</span> </td>
+                              </button> <span className="text-[10px] text-slate-400 font-medium">?? {p.location}</span> </td>
 
                             {/* Status tag */}
                             <td className="px-4 py-3.5 text-center">
                               {entry ? (
                                 <span className="inline-flex items-center space-x-1  px-2.5 py-1 bg-emerald-50 text-emerald-700 border border-emerald-100 rounded-full font-bold text-[10px]"> <span>{labels.completed}</span> </span>
                               ) : (
-                                <span className="inline-flex items-center space-x-1  px-2.5 py-1 bg-amber-50 text-amber-700 border border-amber-100 rounded-full font-bold text-[10px]"> <span>⏳</span> <span>{labels.pending}</span> </span>
+                                <span className="inline-flex items-center space-x-1  px-2.5 py-1 bg-amber-50 text-amber-700 border border-amber-100 rounded-full font-bold text-[10px]"> <span>?</span> <span>{labels.pending}</span> </span>
                               )}
                             </td>
 
@@ -1794,22 +1794,22 @@ export default function SaleLedger() {
 
                             {/* Milk PKR Cost */}
                             <td className="px-4 py-3.5 font-mono text-slate-800 font-bold text-left text-xs">
-                              {entry ? `Rs. ${fmtAmt(entry.totalAmount)}` : '—'}
+                              {entry ? `Rs. ${fmtAmt(entry.totalAmount)}` : '�'}
                             </td>
 
                             {/* Advance amount */}
                             <td className="px-4 py-3.5 font-mono text-indigo-700 text-left">
-                              {entry && entry.advanceAmount > 0 ? `- Rs. ${fmtAmt(entry.advanceAmount)}` : '—'}
+                              {entry && entry.advanceAmount > 0 ? `- Rs. ${fmtAmt(entry.advanceAmount)}` : '�'}
                             </td>
 
                             {/* Cash Net Paid */}
                             <td className="px-4 py-3.5 font-mono text-emerald-700 text-left">
-                              {entry && entry.paymentReceived > 0 ? `- Rs. ${fmtAmt(entry.paymentReceived)}` : '—'}
+                              {entry && entry.paymentReceived > 0 ? `- Rs. ${fmtAmt(entry.paymentReceived)}` : '�'}
                             </td>
 
                             {/* Vichle Rent */}
                             <td className="px-4 py-3.5 font-mono text-orange-700 text-left">
-                              {entry && (entry.vehicleRent || 0) > 0 ? `- Rs. ${fmtAmt(entry.vehicleRent || 0)}` : '—'}
+                              {entry && (entry.vehicleRent || 0) > 0 ? `- Rs. ${fmtAmt(entry.vehicleRent || 0)}` : '�'}
                             </td>
 
                             {/* Remaining Balance calculated sequentially */}
@@ -1916,7 +1916,7 @@ export default function SaleLedger() {
                                   )}
                                   {(item.fat !== undefined || item.lr !== undefined || item.totalTs !== undefined) && (
                                     <span className="text-[9px] bg-slate-50 text-slate-550 border border-slate-100 rounded px-1 py-0.5 inline-block mt-0.5">
-                                      Fat: {item.fat?.toFixed(1)}% | LR: {item.lr !== undefined ? Number(item.lr) : '-'} | TS: {item.totalTs?.toFixed(2)}
+                                      Fat: {item.fat?.toFixed(2)}% | LR: {item.lr !== undefined ? Number(item.lr) : '-'} | TS: {item.totalTs?.toFixed(2)}
                                     </span>
                                   )}
                                 </div> </td> <td className="px-4 py-3 font-mono text-indigo-700">-Rs.{fmtAmt(item.advanceAmount)}</td> <td className="px-4 py-3"> <span className="font-mono text-emerald-700 font-bold block">-Rs.{fmtAmt(item.paymentReceived)}</span>
@@ -2027,12 +2027,12 @@ export default function SaleLedger() {
               
               {/* Modal Banner Header */}
               <div className="p-5.5 bg-gradient-to-r from-emerald-800 to-emerald-950 text-white flex justify-between items-center"> <div className="text-left"> <h3 className="font-black text-white text-base leading-tight">
-                    {labels.modalSaleTitle} — {activeProfileForEntry.customerName}
+                    {labels.modalSaleTitle} � {activeProfileForEntry.customerName}
                   </h3> <p className="text-[10px] text-emerald-200 mt-0.5">Physical location: {activeProfileForEntry.location}</p> </div> <button 
                   onClick={() => setShowEntryModal(false)}
                   className="p-1 px-2.5 bg-white/10 hover:bg-white/20 text-white rounded-lg font-bold text-xs transition cursor-pointer"
                 >
-                  ✕ Close
+                  ? Close
                 </button> </div>
 
               {/* Form entries details block */}
@@ -2050,7 +2050,7 @@ export default function SaleLedger() {
 
                 {/* Previous Remaining Outstanding Area. Read-only lockout */}
                 <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 text-left flex justify-between items-center"> <div className="w-7 text-left">
-                    🔒
+                    ??
                   </div> <div> <span className="text-[10px] text-slate-400 font-extrabold uppercase tracking-wide block font-sans">
                       {labels.previousBalance}
                     </span> <span className="text-md font-extrabold font-mono text-slate-700 block mt-0.5">
@@ -2133,13 +2133,13 @@ export default function SaleLedger() {
                           <span className="font-mono font-bold text-emerald-800">
                             {entryFat !== undefined && entryLr !== undefined 
                               ? (((0.25 * (entryLr || 0)) + (0.22 * (entryFat || 0)) + 0.72) || 0).toFixed(2) + '%'
-                              : '—'
+                              : '�'
                             }
                           </span> </div> <div> <span className="text-slate-500 font-medium">Total TDS (TS %):</span>{' '}
                           <span className="font-mono font-bold text-indigo-900">
                             {entryFat !== undefined && entryLr !== undefined
                               ? (((entryFat || 0) + ((0.25 * (entryLr || 0)) + (0.22 * (entryFat || 0)) + 0.72)) || 0).toFixed(2) + '%'
-                              : '—'
+                              : '�'
                             }
                           </span> </div> <div className="col-span-2 pt-1 border-t border-emerald-100/40 flex justify-between items-center text-xs"> <span className="text-slate-600 font-bold">Total Milk Value:</span> <span className="text-emerald-800 font-bold font-mono text-emerald-700">
                             Rs. {fmtAmt(Number(entryMilkPKR || 0))}
@@ -2305,7 +2305,7 @@ export default function SaleLedger() {
                   </div>
                   {calculatedRemaining !== 0 && (
                     <div className={`text-[13px] font-black urdu-text tracking-wide ${calculatedRemaining > 0 ? "text-rose-700" : "text-emerald-700"}`}>
-                      {calculatedRemaining > 0 ? "آپ نے پیسے لینے ہیں" : "آپ نے پیسے دینے ہیں"}
+                      {calculatedRemaining > 0 ? "?? ?? ???? ???? ???" : "?? ?? ???? ???? ???"}
                     </div>
                   )}
                   <p className="text-[9px] text-emerald-700 italic block font-sans">
@@ -2418,7 +2418,7 @@ export default function SaleLedger() {
           return (
             <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-[300] p-4 animate-fade-in text-left"> <div className="bg-white rounded-2xl w-full max-w-5xl shadow-2xl h-[90vh] flex flex-col border border-slate-200 overflow-hidden">
                 {/* Header Section */}
-                <div className="p-6 border-b border-slate-200 flex justify-between items-center bg-slate-50/50"> <div className="text-left"> <h2 className="text-xl font-black text-slate-800 tracking-tight flex items-center gap-2"> <BarChart2 className="w-5 h-5 text-emerald-600" /> <span>{profile.customerName} Ledger Sheet</span> </h2> <p className="text-xs text-slate-500 font-medium mt-0.5">📍 {profile.location} • WhatsApp: {profile.phoneNumber || 'N/A'}</p> </div> <button 
+                <div className="p-6 border-b border-slate-200 flex justify-between items-center bg-slate-50/50"> <div className="text-left"> <h2 className="text-xl font-black text-slate-800 tracking-tight flex items-center gap-2"> <BarChart2 className="w-5 h-5 text-emerald-600" /> <span>{profile.customerName} Ledger Sheet</span> </h2> <p className="text-xs text-slate-500 font-medium mt-0.5">?? {profile.location} � WhatsApp: {profile.phoneNumber || 'N/A'}</p> </div> <button 
                     onClick={() => setShowDetailsModal(false)}
                     className="p-2 hover:bg-slate-200 rounded-full transition cursor-pointer"
                   > <X className="w-6 h-6 text-slate-400" /> </button> </div>
@@ -2524,17 +2524,17 @@ export default function SaleLedger() {
                                 className="hover:bg-slate-50/80 transition ease-in-out cursor-pointer group text-slate-700"
                                 title="Click to edit/view this entry"
                               > <td className="px-3 py-4 whitespace-nowrap"> <span className="font-bold text-slate-800 block group-hover:text-emerald-700 transition-colors">{fmtDate(item.date)}</span> <span className="text-[10px] text-slate-400 font-medium block">{item.time || 'Manual Entry'}</span> </td> <td className="px-3 py-4 text-center whitespace-nowrap font-black text-slate-700 font-mono">
-                                  {item.milkLiter ? (item.milkUnit === 'Kg' ? <span>{item.milkLiter} L<span className="block text-[9px] font-normal text-slate-400">({(item.milkLiter * 1.03).toFixed(2)} Kg)</span></span> : `${item.milkLiter} L`) : '—'}
+                                  {item.milkLiter ? (item.milkUnit === 'Kg' ? <span>{item.milkLiter} L<span className="block text-[9px] font-normal text-slate-400">({(item.milkLiter * 1.03).toFixed(2)} Kg)</span></span> : `${item.milkLiter} L`) : '�'}
                                 </td> <td className="px-2 py-4 text-center whitespace-nowrap font-bold text-slate-600 font-mono">
-                                  {item.fat != null && Number(item.fat) > 0 ? `${Number(item.fat).toFixed(1)}%` : '—'}
+                                  {item.fat != null && Number(item.fat) > 0 ? `${Number(item.fat).toFixed(2)}%` : '�'}
                                 </td> <td className="px-2 py-4 text-center whitespace-nowrap font-bold text-slate-600 font-mono">
-                                  {item.lr != null && Number(item.lr) > 0 ? Number(item.lr) : '—'}
+                                  {item.lr != null && Number(item.lr) > 0 ? Number(item.lr) : '�'}
                                 </td> <td className="px-2 py-4 text-center whitespace-nowrap font-bold text-slate-600 font-mono">
-                                  {item.snf != null && Number(item.snf) > 0 ? `${Number(item.snf).toFixed(2)}%` : '—'}
+                                  {item.snf != null && Number(item.snf) > 0 ? `${Number(item.snf).toFixed(2)}%` : '�'}
                                 </td> <td className="px-2 py-4 text-center whitespace-nowrap font-bold text-indigo-600 font-mono">
-                                  {item.fat != null && item.snf != null && Number(item.fat) > 0 && Number(item.snf) > 0 ? `${tsPercent.toFixed(2)}%` : '—'}
+                                  {item.fat != null && item.snf != null && Number(item.fat) > 0 && Number(item.snf) > 0 ? `${tsPercent.toFixed(2)}%` : '�'}
                                 </td> <td className="px-3 py-4 text-center whitespace-nowrap font-bold text-indigo-700 font-mono">
-                                  {item.totalTs != null && Number(item.totalTs) > 0 ? Number(item.totalTs).toFixed(2) : '—'}
+                                  {item.totalTs != null && Number(item.totalTs) > 0 ? Number(item.totalTs).toFixed(2) : '�'}
                                 </td> <td className="px-3 py-4 text-right whitespace-nowrap"> <span className="font-black text-slate-850 font-mono text-xs block">Rs. {fmtAmt(item.totalAmount)}</span>
                                   {item.rate > 0 && <span className="text-[9px] text-slate-400 block pb-0.5">@ Rs. {item.rate}</span>}
                                 </td> <td className="px-3 py-4 text-center whitespace-nowrap">
@@ -2542,31 +2542,31 @@ export default function SaleLedger() {
                                     <span className="px-2 py-0.5 bg-indigo-50 text-indigo-700 rounded-full font-bold text-[10px] border border-indigo-100">
                                       - Rs. {fmtAmt(item.advanceAmount)}
                                     </span>
-                                  ) : '—'}
+                                  ) : '�'}
                                 </td> <td className="px-3 py-4 text-center whitespace-nowrap">
                                   {item.paymentReceived > 0 ? (
                                     <span className="px-2 py-0.5 bg-teal-50 text-teal-700 rounded-full font-bold text-[10px] border border-teal-100">
                                       - Rs. {fmtAmt(item.paymentReceived)}
                                     </span>
-                                  ) : '—'}
+                                  ) : '�'}
                                 </td> <td className="px-3 py-4 text-center whitespace-nowrap">
                                   {(item.vehicleRent || 0) > 0 ? (
                                     <span className="px-2 py-0.5 bg-orange-50 text-orange-700 rounded-full font-bold text-[10px] border border-orange-100">
                                       - Rs. {fmtAmt(item.vehicleRent || 0)}
                                     </span>
-                                  ) : '—'}
+                                  ) : '�'}
                                 </td> <td className="px-3 py-4 text-center whitespace-nowrap">
                                   {item.discountAmount !== undefined && item.discountAmount > 0 ? (
                                     <span className="px-2 py-0.5 bg-amber-50 text-amber-700 rounded-full font-bold text-[10px] border border-amber-100">
                                       - Rs. {fmtAmt(item.discountAmount)}
                                     </span>
-                                  ) : '—'}
+                                  ) : '�'}
                                 </td> <td className="px-3 py-4 text-center whitespace-nowrap">
                                   {item.isSpoiled && (item.spoiledAmount || 0) > 0 ? (
-                                    <span className="px-2 py-0.5 bg-rose-50 text-rose-700 rounded-full font-bold text-[10px] border border-rose-100" title={`Spoiled Qty: ${item.spoiledLiters || '—'} L`}>
+                                    <span className="px-2 py-0.5 bg-rose-50 text-rose-700 rounded-full font-bold text-[10px] border border-rose-100" title={`Spoiled Qty: ${item.spoiledLiters || '�'} L`}>
                                       - Rs. {fmtAmt(item.spoiledAmount)}
                                     </span>
-                                  ) : '—'}
+                                  ) : '�'}
                                 </td> <td className="px-4 py-4 text-right whitespace-nowrap"> <span className={`font-black font-mono text-sm ${
                                     item.remainingBalanceState > 0 ? 'text-rose-700' : 'text-emerald-700'
                                   }`}>
@@ -2581,13 +2581,13 @@ export default function SaleLedger() {
                                         </span> </div>
                                     )}
                                     {item.isSpoiled && (item.spoiledAmount || 0) > 0 && (
-                                      <div className="flex flex-wrap gap-x-3 gap-y-1 items-center pt-0.5"> <span className="inline-block px-1.5 py-0.5 rounded bg-rose-100 text-rose-800 text-[9px] font-black uppercase"> ⚠️ Returned Spoilage</span> <span>Returned Spoiled Quantity:</span> <span className="font-mono font-bold bg-white px-1.5 py-0.5 rounded border border-rose-100 text-rose-800">
+                                      <div className="flex flex-wrap gap-x-3 gap-y-1 items-center pt-0.5"> <span className="inline-block px-1.5 py-0.5 rounded bg-rose-100 text-rose-800 text-[9px] font-black uppercase"> ?? Returned Spoilage</span> <span>Returned Spoiled Quantity:</span> <span className="font-mono font-bold bg-white px-1.5 py-0.5 rounded border border-rose-100 text-rose-800">
                                           {item.spoiledLiters || '0'} {item.milkUnit || 'Liters'}
                                         </span>
                                         {item.spoiledRate != null && Number(item.spoiledRate) > 0 && (
                                           <span>@ <span className="font-mono font-bold">Rs. {item.spoiledRate}</span></span>
                                         )}
-                                        <span className="text-slate-300">|</span> <span>Fat: <span className="font-mono font-bold text-slate-800">{item.spoiledFat != null ? `${Number(item.spoiledFat).toFixed(1)}%` : '—'}</span></span> <span className="text-slate-300">|</span> <span>LR: <span className="font-mono font-bold text-slate-800">{item.spoiledLr != null ? Number(item.spoiledLr).toFixed(0) : '—'}</span></span> <span className="text-slate-300">|</span> <span>TS %: <span className="font-mono font-bold text-slate-800">{item.spoiledTs != null ? `${Number(item.spoiledTs).toFixed(2)}%` : '—'}</span></span> <span className="text-slate-300">|</span> <span>SNF %: <span className="font-mono font-bold text-slate-800">{item.spoiledSnf != null ? `${Number(item.spoiledSnf).toFixed(2)}%` : '—'}</span></span> <span className="ml-auto font-black text-rose-700 font-mono bg-rose-100/40 px-2 py-0.5 rounded border border-rose-200">
+                                        <span className="text-slate-300">|</span> <span>Fat: <span className="font-mono font-bold text-slate-800">{item.spoiledFat != null ? `${Number(item.spoiledFat).toFixed(2)}%` : '�'}</span></span> <span className="text-slate-300">|</span> <span>LR: <span className="font-mono font-bold text-slate-800">{item.spoiledLr != null ? Number(item.spoiledLr).toFixed(0) : '�'}</span></span> <span className="text-slate-300">|</span> <span>TS %: <span className="font-mono font-bold text-slate-800">{item.spoiledTs != null ? `${Number(item.spoiledTs).toFixed(2)}%` : '�'}</span></span> <span className="text-slate-300">|</span> <span>SNF %: <span className="font-mono font-bold text-slate-800">{item.spoiledSnf != null ? `${Number(item.spoiledSnf).toFixed(2)}%` : '�'}</span></span> <span className="ml-auto font-black text-rose-700 font-mono bg-rose-100/40 px-2 py-0.5 rounded border border-rose-200">
                                           Deducted Spoilage: Rs. {fmtAmt(item.spoiledAmount)}
                                         </span> </div>
                                     )}
@@ -2632,7 +2632,7 @@ export default function SaleLedger() {
                 </button> </div> </div> </div> </div>
       )}
 
-      {/* ── EDIT CUSTOMER PROFILE MODAL ── */}
+      {/* -- EDIT CUSTOMER PROFILE MODAL -- */}
       {editingCustomer && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
