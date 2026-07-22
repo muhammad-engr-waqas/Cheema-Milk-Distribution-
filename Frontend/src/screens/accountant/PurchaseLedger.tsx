@@ -1682,7 +1682,7 @@ export default function PurchaseLedger() {
                             <span className={`text-[8px] font-black block mt-0.5 uppercase tracking-wide ${
                               balance > 0 ? 'text-rose-600' : balance < 0 ? 'text-emerald-600' : 'text-slate-400'
                             }`}>
-                              {balance > 0 ? '▲ آپ نے پیسے دینے ہیں' : balance < 0 ? '▼ آپ نے پیسے لینے ہیں' : '✓ Settled'}
+                              {balance > 0 ? '▲ آپ نے پیسے لینے ہیں' : balance < 0 ? '▼ آپ نے پیسے دینے ہیں' : '✓ Settled'}
                             </span>
                           </div> </div>
 
@@ -2391,7 +2391,7 @@ export default function PurchaseLedger() {
                   </div>
                   {calculatedRemaining !== 0 && (
                     <div className={`text-[13px] font-black tracking-wide font-urdu ${calculatedRemaining > 0 ? "text-rose-700" : "text-emerald-700"}`}>
-                      {calculatedRemaining > 0 ? "آپ نے پیسے دینے ہیں" : "آپ نے پیسے لینے ہیں"}
+                      {calculatedRemaining > 0 ? "آپ نے پیسے لینے ہیں" : "آپ نے پیسے دینے ہیں"}
                     </div>
                   )}
                   <p className="text-[9px] text-emerald-700 italic block font-sans">
