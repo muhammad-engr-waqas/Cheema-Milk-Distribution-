@@ -2309,7 +2309,7 @@ export default function SaleLedger() {
                   </div>
                   {calculatedRemaining !== 0 && (
                     <div className={`text-[13px] font-black tracking-wide font-urdu ${calculatedRemaining > 0 ? "text-rose-700" : "text-emerald-700"}`}>
-                      {calculatedRemaining > 0 ? "آپ نے پیسے دینے ہیں" : "آپ نے پیسے لینے ہیں"}
+                      {calculatedRemaining > 0 ? "آپ نے پیسے لینے ہیں" : "آپ نے پیسے دینے ہیں"}
                     </div>
                   )}
                   <p className="text-[9px] text-emerald-700 italic block font-sans">
