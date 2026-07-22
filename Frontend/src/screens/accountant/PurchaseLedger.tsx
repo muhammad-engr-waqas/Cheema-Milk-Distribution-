@@ -111,7 +111,7 @@ const translations = {
     liters: "Milk Liters",
     rate: "Rate / Liter",
     previewNewBalance: "Projected Balance Preview",
-    formulaNote: "Formula: New Balance = Prev Balance - Milk Purchased + Advance + Cash Paid",
+    formulaNote: "Formula: New Balance = Prev Balance + Milk Purchased - Advance - Cash Paid",
     saveTransaction: "Save Purchase Entry",
     close: "Close Dialog",
     ledgerDetails: "Ledger Activity Ledger Sheet",
@@ -743,8 +743,10 @@ export default function PurchaseLedger() {
 
     let cum = Number(profile.openingBalance) || 0;
     previousEntries.forEach(e => {
+      // Purchase formula: milk aata hai → hamara debt badhta hai (+net)
+      // Advance/Cash daitay hain → debt ghatta hai (-advance, -cash)
       const net = (Number(e.totalAmount) || 0) - (Number(e.spoiledAmount) || 0) - (Number(e.discountAmount) || 0);
-      cum = cum - net + Number(e.advanceAmount) + Number(e.paymentReceived);
+      cum = cum + net - Number(e.advanceAmount) - Number(e.paymentReceived);
     });
 
     return cum;
@@ -1265,8 +1267,9 @@ export default function PurchaseLedger() {
     const netMilkLiter = (Number(calcLiters) || 0) - (Number(spoiledLiters) || 0);
 
     // Retrieve previous outstanding balance for that exact supplier profile up to this exact moment
+    // Purchase formula: milk aata hai → debt badhta hai; payment → debt ghatta hai
     const prevBalance = getSupplierCurrentBalance(activeProfileForEntry);
-    const calculatedRemaining = prevBalance - actualMilkAddedToBalance + advanceValue + cashValue;
+    const calculatedRemaining = prevBalance + actualMilkAddedToBalance - advanceValue - cashValue;
 
     // NOTE: addRecords call hata diya � woh milkRecordsApi.createBulk call karta tha
     // jo MilkRecord + PurchaseLedger dono mein entry banata tha.
@@ -1504,8 +1507,9 @@ export default function PurchaseLedger() {
     
     filtered.forEach(item => {
       const start = running;
+      // Purchase formula: milk aata hai → debt badhta hai (+net); payment → debt ghatta hai (-advance, -cash)
       const net = (Number(item.totalAmount) || 0) - (Number(item.spoiledAmount) || 0) - (Number(item.discountAmount) || 0);
-      const end = start - net + Number(item.advanceAmount) + Number(item.paymentReceived);
+      const end = start + net - Number(item.advanceAmount) - Number(item.paymentReceived);
       
       finalTimeline.push({
         ...item,
@@ -1676,7 +1680,15 @@ export default function PurchaseLedger() {
                               : balance < 0 
                                 ? 'bg-emerald-50 border-emerald-100 text-emerald-800' 
                                 : 'bg-slate-50 border-slate-150 text-slate-500'
-                          }`}> <span className="text-[8px] font-bold block uppercase pb-0.5 text-slate-400">Current Balance</span> <span className="text-xs font-black">{labels.pkr} {fmtAmt(balance)}</span> </div> </div>
+                          }`}>
+                            <span className="text-[8px] font-bold block uppercase pb-0.5 text-slate-400">Current Balance</span>
+                            <span className="text-xs font-black">{labels.pkr} {fmtAmt(Math.abs(balance))}</span>
+                            <span className={`text-[8px] font-black block mt-0.5 uppercase tracking-wide ${
+                              balance > 0 ? 'text-rose-600' : balance < 0 ? 'text-emerald-600' : 'text-slate-400'
+                            }`}>
+                              {balance > 0 ? '▲ آپ نے پیسے دینے ہیں' : balance < 0 ? '▼ آپ نے پیسے لینے ہیں' : '✓ Settled'}
+                            </span>
+                          </div> </div>
 
                         {/* Contact details */}
                         <div className="mt-4 space-y-1.5 text-left border-t border-slate-100 pt-3 text-xs text-slate-500"> <p className="flex items-center space-x-1  "> <Smartphone className="w-3.5 h-3.5 text-slate-400" /> <span>{p.phoneNumber || "N/A"}</span> </p> <p className="flex items-center space-x-1  "> <User className="w-3.5 h-3.5 text-slate-400" /> <span>{labels.driver}: <strong className="text-slate-700 font-semibold">{p.driverName}</strong></span> </p>
@@ -1811,9 +1823,9 @@ export default function PurchaseLedger() {
                         // Previous Outstanding auto-loads prior to the selection date. Read-only.
                         const prevBal = supplierPrevBalanceMap.get(p.id) ?? getSupplierBalanceBeforeDate(p, selectedDate);
                         
-                        // Calculated remaining: Previous outstanding - Milk + Advance + Cash
+                        // Calculated remaining: Purchase formula → milk + prev - advance - cash
                         const calculatedRem = entry 
-                          ? prevBal - entry.totalAmount + entry.advanceAmount + entry.paymentReceived
+                          ? prevBal + (entry.totalAmount - (entry.spoiledAmount || 0) - (entry.discountAmount || 0)) - entry.advanceAmount - entry.paymentReceived
                           : prevBal;
 
                         return (<tr key={p.id} className="hover:bg-slate-50/50 transition">
@@ -2062,8 +2074,8 @@ export default function PurchaseLedger() {
         
         const actualMilkAddedToBalance = milkValue - spoiledValue - discountValue;
 
-        // Auto-calculating formula preview
-        const calculatedRemaining = prevBal - actualMilkAddedToBalance + advanceValue + cashValue;
+        // Auto-calculating formula preview (Purchase: milk badhata hai balance, payment ghatta hai)
+        const calculatedRemaining = prevBal + actualMilkAddedToBalance - advanceValue - cashValue;
 
         // HISTORY PREVIEW DATA
         const recentHistory = getSupplierTransactionsTimeline(activeProfileForEntry).slice(0, 3);
