@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+﻿import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { fmtDate } from '../../utils/dateFormat';
 import { 
@@ -1805,17 +1805,17 @@ export default function SaleLedger() {
 
                             {/* Advance amount */}
                             <td className="px-4 py-3.5 font-mono text-indigo-700 text-left">
-                              {entry && entry.advanceAmount > 0 ? `- Rs. ${fmtAmt(entry.advanceAmount)}` : '�'}
+                              {entry && (entry.advanceAmount || 0) !== 0 ? `- Rs. ${fmtAmt(entry.advanceAmount)}` : '�'}
                             </td>
 
                             {/* Cash Net Paid */}
                             <td className="px-4 py-3.5 font-mono text-emerald-700 text-left">
-                              {entry && entry.paymentReceived > 0 ? `- Rs. ${fmtAmt(entry.paymentReceived)}` : '�'}
+                              {entry && (entry.paymentReceived || 0) !== 0 ? `- Rs. ${fmtAmt(entry.paymentReceived)}` : '�'}
                             </td>
 
                             {/* Vichle Rent */}
                             <td className="px-4 py-3.5 font-mono text-orange-700 text-left">
-                              {entry && (entry.vehicleRent || 0) > 0 ? `- Rs. ${fmtAmt(entry.vehicleRent || 0)}` : '�'}
+                              {entry && (entry.vehicleRent || 0) !== 0 ? `- Rs. ${fmtAmt(entry.vehicleRent || 0)}` : '�'}
                             </td>
 
                             {/* Remaining Balance calculated sequentially */}
@@ -2542,19 +2542,19 @@ export default function SaleLedger() {
                                 </td> <td className="px-3 py-4 text-right whitespace-nowrap"> <span className="font-black text-slate-850 font-mono text-xs block">Rs. {fmtAmt(item.totalAmount)}</span>
                                   {item.rate > 0 && <span className="text-[9px] text-slate-400 block pb-0.5">@ Rs. {item.rate}</span>}
                                 </td> <td className="px-3 py-4 text-center whitespace-nowrap">
-                                  {item.advanceAmount > 0 ? (
+                                  {item.advanceAmount !== 0 ? (
                                     <span className="px-2 py-0.5 bg-indigo-50 text-indigo-700 rounded-full font-bold text-[10px] border border-indigo-100">
                                       - Rs. {fmtAmt(item.advanceAmount)}
                                     </span>
                                   ) : '—'}
                                 </td> <td className="px-3 py-4 text-center whitespace-nowrap">
-                                  {item.paymentReceived > 0 ? (
+                                  {item.paymentReceived !== 0 ? (
                                     <span className="px-2 py-0.5 bg-teal-50 text-teal-700 rounded-full font-bold text-[10px] border border-teal-100">
                                       - Rs. {fmtAmt(item.paymentReceived)}
                                     </span>
                                   ) : '—'}
                                 </td> <td className="px-3 py-4 text-center whitespace-nowrap">
-                                  {(item.vehicleRent || 0) > 0 ? (
+                                  {(item.vehicleRent || 0) !== 0 ? (
                                     <span className="px-2 py-0.5 bg-orange-50 text-orange-700 rounded-full font-bold text-[10px] border border-orange-100">
                                       - Rs. {fmtAmt(item.vehicleRent || 0)}
                                     </span>

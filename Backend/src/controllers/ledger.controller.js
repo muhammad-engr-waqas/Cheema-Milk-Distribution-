@@ -29,18 +29,13 @@ const getPurchaseLedger = asyncHandler(async (req, res) => {
     .sort({ date: -1, createdAt: -1 });
 
   // Sirf completely empty entries hide karo (koi bhi transaction nahi)
-  // advance-only ya cash-only entries bhi valid hain — milkLiter=0 pe filter mat karo
-  // BUG FIX: pehle milkLiter (quantity) ko condition mein include nahi kiya
-  // gaya tha — is wajah se woh entries jinka rate abhi set nahi hua (totalAmount
-  // ma abhi 0 hai) lekin liter/kg quantity record ho chuki thi, list se
-  // GHAYAB ho jaati thi jabke DB mein save thi. Ab milkLiter > 0 wali entries
-  // bhi hamesha dikhengi.
+  // NOTE: !== 0 use kiya hai > 0 ki jagah — taake negative amounts bhi valid maani jayein
   const filtered = entries.filter(e =>
-    (e.milkLiter || 0) > 0 ||
-    (e.totalAmount || 0) > 0 ||
-    (e.advanceAmount || 0) > 0 ||
-    (e.paymentReceived || 0) > 0 ||
-    (e.discountAmount || 0) > 0
+    (e.milkLiter || 0) !== 0 ||
+    (e.totalAmount || 0) !== 0 ||
+    (e.advanceAmount || 0) !== 0 ||
+    (e.paymentReceived || 0) !== 0 ||
+    (e.discountAmount || 0) !== 0
   );
 
   // NOTE: Dedupe yahan NAHI karni — same party se same rate pe genuinely 2 baar
@@ -212,14 +207,16 @@ const getSaleLedger = asyncHandler(async (req, res) => {
   // GHAYAB ho jaati thi jabke DB mein save thi. Ab milkLiter > 0 wali entries
   // bhi hamesha dikhengi.
   // Entries filter: koi bhi meaningful transaction wali entry show karo
+  // NOTE: !== 0 use kiya hai > 0 ki jagah — taake negative amounts (adjustments/returns)
+  // bhi display ho sakein aur refresh pe gaib na hon
   const filtered = entries.filter(e =>
-    (e.milkLiter || 0) > 0 ||
-    (e.totalAmount || 0) > 0 ||
-    (e.advanceAmount || 0) > 0 ||
-    (e.paymentReceived || 0) > 0 ||
-    (e.vehicleRent || 0) > 0 ||
-    (e.discountAmount || 0) > 0 ||
-    (e.spoiledAmount || 0) > 0
+    (e.milkLiter || 0) !== 0 ||
+    (e.totalAmount || 0) !== 0 ||
+    (e.advanceAmount || 0) !== 0 ||
+    (e.paymentReceived || 0) !== 0 ||
+    (e.vehicleRent || 0) !== 0 ||
+    (e.discountAmount || 0) !== 0 ||
+    (e.spoiledAmount || 0) !== 0
   );
 
   // NOTE: Dedupe yahan NAHI karni — same customer ko same rate pe genuinely 2 baar
@@ -250,14 +247,16 @@ const createSaleLedgerEntry = asyncHandler(async (req, res) => {
   }
 
   // Empty entry guard — agar koi bhi meaningful value nahi toh save mat karo
+  // NOTE: !== 0 use kiya hai > 0 ki jagah — taake negative amounts (returns/credits)
+  // bhi valid entries maani jayein aur save ho sakein
   const hasValue =
-    (Number(req.body.milkLiter) || 0) > 0 ||
-    (Number(req.body.totalAmount) || 0) > 0 ||
-    (Number(req.body.advanceAmount) || 0) > 0 ||
-    (Number(req.body.paymentReceived) || 0) > 0 ||
-    (Number(req.body.vehicleRent) || 0) > 0 ||
-    (Number(req.body.discountAmount) || 0) > 0 ||
-    (Number(req.body.spoiledAmount) || 0) > 0;
+    (Number(req.body.milkLiter) || 0) !== 0 ||
+    (Number(req.body.totalAmount) || 0) !== 0 ||
+    (Number(req.body.advanceAmount) || 0) !== 0 ||
+    (Number(req.body.paymentReceived) || 0) !== 0 ||
+    (Number(req.body.vehicleRent) || 0) !== 0 ||
+    (Number(req.body.discountAmount) || 0) !== 0 ||
+    (Number(req.body.spoiledAmount) || 0) !== 0;
 
   if (!hasValue) {
     return ApiResponse.ok(null, 'Skipped — empty entry has no transaction value').send(res);
