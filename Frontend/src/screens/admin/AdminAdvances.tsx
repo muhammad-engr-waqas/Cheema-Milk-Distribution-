@@ -660,7 +660,7 @@ export default function AdminAdvances() {
                           value={txForm.bankAccount}
                           onChange={(e) => setTxForm({ ...txForm, bankAccount: e.target.value })}
                           className="w-full px-2 py-1 bg-white border border-slate-200 rounded text-xs outline-none"
-                        > <option value="">-- Choose Account --</option> <option value="Meezan Bank">Meezan Bank</option> <option value="UBL">UBL (United Bank)</option> <option value="HBL">HBL</option> <option value="Jazzcash">JazzCash</option> <option value="Easypaisa">EasyPaisa</option> </select> </div> </div> </div>
+                        > <option value="">-- Choose Account --</option> <option value="HBL">HBL (Habib Bank)</option> <option value="UBL">UBL (United Bank)</option> <option value="MCB Bank">MCB Bank</option> <option value="Allied Bank">Allied Bank (ABL)</option> <option value="Meezan Bank">Meezan Bank</option> <option value="Bank Alfalah">Bank Alfalah</option> <option value="Askari Bank">Askari Bank</option> <option value="NBP">NBP (National Bank)</option> <option value="BOP">BOP (Bank of Punjab)</option> <option value="Faisal Bank">Faisal Bank</option> <option value="Jazzcash">JazzCash</option> <option value="Easypaisa">EasyPaisa</option> </select> </div> </div> </div>
                 )}
 
                 {txForm.type === 'CASH_RETURN' && (

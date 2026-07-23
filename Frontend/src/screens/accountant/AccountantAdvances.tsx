@@ -687,7 +687,7 @@ export default function AccountantAdvances() {
                             required
                             onChange={(e) => setTxForm({ ...txForm, bankAccount: e.target.value })}
                             className="w-full px-2 py-1.5 border border-slate-300 rounded-lg text-xs bg-white outline-none text-slate-700 font-bold"
-                          > <option value="">-- Choose Account --</option> <option value="UBL">UBL (United Bank)</option> <option value="Meezan Bank">Meezan Bank</option> <option value="HBL">HBL Bank</option> <option value="JazzCash">JazzCash Wallet</option> <option value="EasyPaisa">EasyPaisa Wallet</option> <option value="Other">Other Account</option> </select> </>
+                          > <option value="">-- Choose Account --</option> <option value="HBL">HBL (Habib Bank)</option> <option value="UBL">UBL (United Bank)</option> <option value="MCB Bank">MCB Bank</option> <option value="Allied Bank">Allied Bank (ABL)</option> <option value="Meezan Bank">Meezan Bank</option> <option value="Bank Alfalah">Bank Alfalah</option> <option value="Askari Bank">Askari Bank</option> <option value="NBP">NBP (National Bank)</option> <option value="BOP">BOP (Bank of Punjab)</option> <option value="Faisal Bank">Faisal Bank</option> <option value="JazzCash">JazzCash Wallet</option> <option value="EasyPaisa">EasyPaisa Wallet</option> <option value="Other">Other Account</option> </select> </>
                       ) : (
                         <div className="text-[10px] text-slate-400 italic flex items-center justify-center h-full pt-4 font-sans text-center">
                           Physical physical cash given

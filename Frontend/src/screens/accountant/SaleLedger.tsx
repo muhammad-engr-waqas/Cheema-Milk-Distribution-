@@ -2286,7 +2286,7 @@ export default function SaleLedger() {
                           value={entryBankName}
                           onChange={(e) => setEntryBankName(e.target.value)}
                           className="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-xs bg-white focus:ring-2 focus:ring-emerald-500 font-semibold"
-                        > <option value="HBL">HBL</option> <option value="UBL">UBL</option> <option value="Meezan Bank">Meezan Bank</option> <option value="Allied Bank">Allied Bank</option> <option value="Bank Alfalah">Bank Alfalah</option> <option value="NBP">NBP</option> </select> </div>
+                        > <option value="HBL">HBL (Habib Bank)</option> <option value="UBL">UBL (United Bank)</option> <option value="MCB Bank">MCB Bank</option> <option value="Allied Bank">Allied Bank (ABL)</option> <option value="Meezan Bank">Meezan Bank</option> <option value="Bank Alfalah">Bank Alfalah</option> <option value="Askari Bank">Askari Bank</option> <option value="NBP">NBP (National Bank)</option> <option value="BOP">BOP (Bank of Punjab)</option> <option value="Faisal Bank">Faisal Bank</option> </select> </div>
                     ) : (
                       <div className="flex flex-col justify-center"> <span className="text-[10px] text-slate-400 font-bold uppercase">Wallet / Direct</span> <span className="text-xs text-slate-600 font-bold italic mt-1">Direct Outflow Route</span> </div>
                     )}

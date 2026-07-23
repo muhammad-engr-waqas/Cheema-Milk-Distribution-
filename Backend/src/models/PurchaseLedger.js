@@ -32,7 +32,7 @@ const purchaseLedgerSchema = new mongoose.Schema(
     milkRecordId: { type: mongoose.Schema.Types.ObjectId, ref: 'MilkRecord', default: null },
     // Payment fields
     paymentType: { type: String, default: '' },   // Cash, Bank Transfer, JazzCash, EasyPaisa
-    bankName: { type: String, default: '' },        // Meezan, HBL, UBL, Alfalah
+    bankName: { type: String, default: '' },        // HBL, UBL, MCB, Allied Bank, Meezan, Bank Alfalah, Askari, NBP, BOP, Faisal Bank
     discountAmount: { type: Number, default: 0 },
     // Spoiled milk
     isSpoiled: { type: Boolean, default: false },
